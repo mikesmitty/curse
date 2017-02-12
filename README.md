@@ -1,4 +1,4 @@
-# curse
+# CURSE
 
 Certificate Utilization for Robust SSH Ephemerality
 
