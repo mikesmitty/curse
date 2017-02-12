@@ -11,6 +11,7 @@ TODO
 * SSL support
 * Client app
 * More configuration options
+* Per-user access ACLs
 
 Maybe Somedays
 --------------
