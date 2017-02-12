@@ -14,7 +14,7 @@ import (
 
 var (
 	caKeyFile string
-	dur       time.Duration
+	duration  time.Duration
 	port      int
 )
 
@@ -25,7 +25,7 @@ func main() {
 		flag.PrintDefaults()
 	}
 
-	flag.DurationVar(&dur, "dur", 2*time.Minute, "The duration of the certificate (in seconds)")
+	flag.DurationVar(&duration, "dur", 2*time.Minute, "The duration of the certificate (in seconds)")
 	flag.IntVar(&port, "port", 8000, "The port on which to listen")
 	flag.StringVar(&caKeyFile, "cakey", "test_keys/user_ca", "Key file containing the CA private key")
 
@@ -50,10 +50,11 @@ func main() {
 			exts["permit-user-rc"] = ""
 
 			certConf := certConfig{
-				certType: ssh.UserCert,
-				//dur:        time.Second * dur,
-				dur:        dur,
-				exts:       exts,
+				certType:   ssh.UserCert,
+				command:    "echo test",
+				duration:   duration,
+				extensions: exts,
+				keyId:      "key_id goes here",
 				principals: []string{"root"}, //DEBUG
 				srcAddr:    "1.2.3.4",        //DEBUG
 			}

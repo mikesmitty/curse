@@ -11,8 +11,10 @@ import (
 
 type certConfig struct {
 	certType   uint32
-	dur        time.Duration
-	exts       map[string]string
+	command    string
+	duration   time.Duration
+	extensions map[string]string
+	keyId      string
 	principals []string
 	srcAddr    string
 }
@@ -39,14 +41,25 @@ func signPubKey(signer ssh.Signer, rawKey []byte, certConf certConfig) (*ssh.Cer
 		return nil, err
 	}
 
+	critOpt := make(map[string]string)
+	critOpt["force-command"] = certConf.command
+	critOpt["source-address"] = certConf.srcAddr
+
+	perms := ssh.Permissions{
+		CriticalOptions: critOpt,
+		Extensions:      certConf.extensions,
+	}
+
 	// Make a cert from our pubkey
 	cert := &ssh.Certificate{
-		ValidPrincipals: certConf.principals,
 		Key:             pubKey,
 		Serial:          1,
 		CertType:        certConf.certType,
+		KeyId:           certConf.keyId,
+		ValidPrincipals: certConf.principals,
 		ValidAfter:      uint64(time.Now().Unix()),
-		ValidBefore:     uint64(time.Now().Add(certConf.dur).Unix()),
+		ValidBefore:     uint64(time.Now().Add(certConf.duration).Unix()),
+		Permissions:     perms,
 	}
 
 	err = cert.SignCert(rand.Reader, signer)
