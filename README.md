@@ -6,9 +6,11 @@ This software is currently in a pre-alpha state and not recommended for use.
 
 Requirements
 ------------
-OpenSSH server 5.6+
-CentOS 7
-Ubuntu 12.04+
+* OpenSSH 5.6+
+*CentOS 7
+*Ubuntu 12.04+
+
+Because SSH certificates are a relatively recent feature in OpenSSH, regrettably older versions of CentOS do not support them.
 
 TODO
 ----
