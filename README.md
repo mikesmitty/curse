@@ -5,6 +5,12 @@ CURSE is an SSH certificating signing server, built as an alternative to Netflix
 
 This software is currently in a pre-alpha state and not recommended for use.
 
+Requirements
+------------
+OpenSSH server 5.6+
+CentOS 7
+Ubuntu 12.04+
+
 TODO
 ----
 * Authentication
