@@ -39,45 +39,49 @@ var (
 var RootCmd = &cobra.Command{
 	Use:   "cursed",
 	Short: "SSH certificate signing daemon",
-	Long:  `CURSE is an SSH certificating signing server, built as an alternative to Netflix's BLESS tool, but without a dependency on AWS`,
+	Long: `CURSE: Certificate Utilization for Robust SSH Ephemerality
+CURSE is an SSH certificating signing server, built as an alternative to Netflix's BLESS tool, but without a dependency on AWS`,
 	Run: func(cmd *cobra.Command, args []string) {
 
 		caKey, err := loadCAKey(caKeyFile)
 		if err != nil {
-			log.Fatal("Couldn't load CA key: ", err)
+			log.Fatal("%v", err)
 		}
 
 		// Start web service
 		http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 			rawPubKey := r.PostFormValue("k")
-			if rawPubKey != "" {
-				log.Printf("Signing request: |%s|", rawPubKey)
+			if rawPubKey == "" {
+				http.Error(w, "Please provide a key to sign", 422)
+				return
+			}
 
-				exts := make(map[string]string)
+			log.Printf("Signing request: |%s|", rawPubKey)
 
-				// Enable all extensions for testing DEBUG
-				exts["permit-X11-forwarding"] = ""
-				exts["permit-agent-forwarding"] = ""
-				exts["permit-port-forwarding"] = ""
-				exts["permit-pty"] = ""
-				exts["permit-user-rc"] = ""
+			exts := make(map[string]string)
 
-				certConf := certConfig{
-					certType:   ssh.UserCert,
-					command:    "echo test",
-					duration:   duration,
-					extensions: exts,
-					keyId:      "key_id goes here", //DEBUG
-					principals: []string{"root"},   //DEBUG
-					srcAddr:    "1.2.3.4",          //DEBUG
-				}
+			// Enable all extensions for testing DEBUG
+			exts["permit-X11-forwarding"] = ""
+			exts["permit-agent-forwarding"] = ""
+			exts["permit-port-forwarding"] = ""
+			exts["permit-pty"] = ""
+			exts["permit-user-rc"] = ""
 
-				key, err := signPubKey(caKey, []byte(rawPubKey), certConf)
-				if err != nil {
-					log.Printf("%v", err)
-				} else {
-					w.Write(ssh.MarshalAuthorizedKey(key))
-				}
+			certConf := certConfig{
+				certType:   ssh.UserCert,
+				command:    "echo test",
+				duration:   duration,
+				extensions: exts,
+				keyId:      "key_id goes here", //DEBUG
+				principals: []string{"root"},   //DEBUG
+				srcAddr:    "1.2.3.4",          //DEBUG
+			}
+
+			key, err := signPubKey(caKey, []byte(rawPubKey), certConf)
+			if err != nil {
+				log.Printf("%v", err)
+			} else {
+				w.Write(ssh.MarshalAuthorizedKey(key))
 			}
 
 		})
@@ -107,7 +111,7 @@ func init() {
 
 	RootCmd.PersistentFlags().StringVar(&caKeyFile, "cakey", "test_keys/user_ca", "File path of the CA private key to be used for signing")
 	RootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.cursed.yaml)")
-	RootCmd.PersistentFlags().IntVar(&durInt, "dur", 2*60, "Duration of certificate validity, in seconds")
+	RootCmd.PersistentFlags().IntVar(&durInt, "duration", 2*60, "Duration of certificate validity, in seconds")
 	RootCmd.PersistentFlags().IntVar(&port, "port", 8000, "Port to listen on")
 
 	// Convert our duration from int to time.Duration
@@ -126,6 +130,6 @@ func initConfig() {
 
 	// If a config file is found, read it in.
 	if err := viper.ReadInConfig(); err == nil {
-		log.Printf("Using config file:", viper.ConfigFileUsed())
+		log.Printf("Using config file: %s", viper.ConfigFileUsed())
 	}
 }

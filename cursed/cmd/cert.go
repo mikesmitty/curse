@@ -1,4 +1,4 @@
-package main
+package cmd
 
 import (
 	"crypto/rand"
@@ -23,11 +23,13 @@ func loadCAKey(keyFile string) (ssh.Signer, error) {
 	// Read in our private key PEM file
 	key, err := ioutil.ReadFile(keyFile)
 	if err != nil {
+		err = fmt.Errorf("Failed to read CA key file: %v", err)
 		return nil, err
 	}
 
 	sk, err := ssh.ParsePrivateKey(key)
 	if err != nil {
+		err = fmt.Errorf("Failed to parse CA key: %v", err)
 		return nil, err
 	}
 
