@@ -72,7 +72,7 @@ func webHandler(w http.ResponseWriter, r *http.Request, conf *config) {
 }
 
 func validateHTTPParams(p httpParams, conf *config) error {
-	if conf.forceCmd && p.cmd == "" {
+	if conf.ForceCmd && p.cmd == "" {
 		err := fmt.Errorf("cmd missing from request")
 		return err
 	}

@@ -13,15 +13,15 @@ import (
 )
 
 type config struct {
-	//cfgFile    string
-	caSigner   ssh.Signer
-	caKey      string
-	duration   int
-	dur        time.Duration
-	extensions []string
-	exts       map[string]string
-	forceCmd   bool
-	port       int
+	caSigner ssh.Signer
+	dur      time.Duration
+	exts     map[string]string
+
+	CAKey      string
+	Duration   int
+	Extensions []string
+	ForceCmd   bool
+	Port       int
 }
 
 func main() {
@@ -31,15 +31,9 @@ func main() {
 		log.Fatal("Unable to read config into struct: ", err)
 	}
 
-	//caKey = viper.GetString("cakey")
-	//durInt := viper.GetInt("duration")
-	//confExts := viper.GetStringSlice("extensions")
-	//forceCmd = viper.GetBool("force-command")
-	//port = viper.GetInt("port")
-
 	// Check our extensions for validity
 	var errSlice []error
-	conf.exts, errSlice = validateExtensions(conf.extensions)
+	conf.exts, errSlice = validateExtensions(conf.Extensions)
 	if len(errSlice) > 0 {
 		for _, err := range errSlice {
 			log.Printf("%v", err)
@@ -47,11 +41,10 @@ func main() {
 	}
 
 	// Convert our cert validity duration from int to time.Duration
-	conf.dur = time.Duration(conf.duration) * time.Second
+	conf.dur = time.Duration(conf.Duration) * time.Second
 
-	fmt.Printf("%v", conf) // DEBUG
-
-	conf.caSigner, err = loadCAKey(conf.caKey)
+	// Load the CA key into an ssh.Signer
+	conf.caSigner, err = loadCAKey(conf.CAKey)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -61,8 +54,8 @@ func main() {
 		webHandler(w, r, &conf)
 	})
 
-	log.Printf("Starting HTTP server on %d", conf.port)
-	err = http.ListenAndServe(":"+strconv.Itoa(conf.port), nil)
+	log.Printf("Starting HTTP server on %d", conf.Port)
+	err = http.ListenAndServe(":"+strconv.Itoa(conf.Port), nil)
 	if err != nil {
 		log.Fatal("ListenAndServe: ", err)
 	}
