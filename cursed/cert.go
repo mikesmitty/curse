@@ -1,4 +1,4 @@
-package cmd
+package main
 
 import (
 	"crypto/rand"
@@ -10,13 +10,15 @@ import (
 )
 
 type certConfig struct {
-	certType   uint32
-	command    string
-	duration   time.Duration
-	extensions map[string]string
-	keyId      string
-	principals []string
-	srcAddr    string
+	certType    uint32
+	command     string
+	duration    time.Duration
+	extensions  map[string]string
+	keyID       string
+	principals  []string
+	srcAddr     string
+	validAfter  time.Time
+	validBefore time.Time
 }
 
 func loadCAKey(keyFile string) (ssh.Signer, error) {
@@ -36,7 +38,7 @@ func loadCAKey(keyFile string) (ssh.Signer, error) {
 	return sk, nil
 }
 
-func signPubKey(signer ssh.Signer, rawKey []byte, certConf certConfig) (*ssh.Certificate, error) {
+func signPubKey(signer ssh.Signer, rawKey []byte, cc certConfig) (*ssh.Certificate, error) {
 	pubKey, _, _, _, err := ssh.ParseAuthorizedKey(rawKey)
 	if err != nil {
 		err = fmt.Errorf("Failed to parse pubkey: %v", err)
@@ -44,23 +46,25 @@ func signPubKey(signer ssh.Signer, rawKey []byte, certConf certConfig) (*ssh.Cer
 	}
 
 	critOpt := make(map[string]string)
-	critOpt["force-command"] = certConf.command
-	critOpt["source-address"] = certConf.srcAddr
+	if cc.command != "" {
+		critOpt["force-command"] = cc.command
+	}
+	critOpt["source-address"] = cc.srcAddr
 
 	perms := ssh.Permissions{
 		CriticalOptions: critOpt,
-		Extensions:      certConf.extensions,
+		Extensions:      cc.extensions,
 	}
 
 	// Make a cert from our pubkey
 	cert := &ssh.Certificate{
 		Key:             pubKey,
 		Serial:          1,
-		CertType:        certConf.certType,
-		KeyId:           certConf.keyId,
-		ValidPrincipals: certConf.principals,
-		ValidAfter:      uint64(time.Now().Unix()),
-		ValidBefore:     uint64(time.Now().Add(certConf.duration).Unix()),
+		CertType:        cc.certType,
+		KeyId:           cc.keyID,
+		ValidPrincipals: cc.principals,
+		ValidAfter:      uint64(cc.validAfter.Unix()),
+		ValidBefore:     uint64(cc.validBefore.Unix()),
 		Permissions:     perms,
 	}
 
