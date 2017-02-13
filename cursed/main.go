@@ -68,7 +68,7 @@ func init() {
 
 	// Check our extensions for validity
 	var errSlice []error
-	extensions, errSlice = processExtensions(confExts)
+	extensions, errSlice = validateExtensions(confExts)
 	if len(errSlice) > 0 {
 		for _, err := range errSlice {
 			log.Printf("%v", err)
@@ -79,7 +79,7 @@ func init() {
 	duration = time.Duration(durInt) * time.Second
 }
 
-func processExtensions(confExts []string) (map[string]string, []error) {
+func validateExtensions(confExts []string) (map[string]string, []error) {
 	validExts := []string{"permit-X11-forwarding", "permit-agent-forwarding",
 		"permit-port-forwarding", "permit-pty", "permit-user-rc"}
 	exts := make(map[string]string)
