@@ -12,7 +12,6 @@ import (
 type certConfig struct {
 	certType    uint32
 	command     string
-	duration    time.Duration
 	extensions  map[string]string
 	keyID       string
 	principals  []string

@@ -12,38 +12,59 @@ import (
 	"github.com/spf13/viper"
 )
 
-var (
-	caKey      ssh.Signer
-	caKeyFile  string
-	cfgFile    string
-	duration   time.Duration
-	extensions map[string]string
-	forceCmd   bool
-	port       int
-)
+type config struct {
+	caSigner ssh.Signer
+	dur      time.Duration
+	exts     map[string]string
+
+	CAKey      string
+	Duration   int
+	Extensions []string
+	ForceCmd   bool
+	Port       int
+}
 
 func main() {
-	caKey, err := loadCAKey(caKeyFile)
+	var conf config
+	err := viper.Unmarshal(&conf)
 	if err != nil {
-		log.Fatal("%v", err)
+		log.Fatal("Unable to read config into struct: ", err)
+	}
+
+	// Check our extensions for validity
+	var errSlice []error
+	conf.exts, errSlice = validateExtensions(conf.Extensions)
+	if len(errSlice) > 0 {
+		for _, err := range errSlice {
+			log.Printf("%v", err)
+		}
+	}
+
+	// Convert our cert validity duration from int to time.Duration
+	conf.dur = time.Duration(conf.Duration) * time.Second
+
+	// Load the CA key into an ssh.Signer
+	conf.caSigner, err = loadCAKey(conf.CAKey)
+	if err != nil {
+		log.Fatal(err)
 	}
 
 	// Start web service
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		webHandler(w, r, &caKey)
+		webHandler(w, r, &conf)
 	})
 
-	log.Printf("Starting HTTP server on %d", port)
-	err = http.ListenAndServe(":"+strconv.Itoa(port), nil)
+	log.Printf("Starting HTTP server on %d", conf.Port)
+	err = http.ListenAndServe(":"+strconv.Itoa(conf.Port), nil)
 	if err != nil {
 		log.Fatal("ListenAndServe: ", err)
 	}
 }
 
 func init() {
-	if cfgFile != "" { // enable ability to specify config file via flag
-		viper.SetConfigFile(cfgFile)
-	}
+	//if cfgFile != "" { // enable ability to specify config file via flag
+	//	viper.SetConfigFile(cfgFile)
+	//}
 
 	viper.SetConfigName(".cursed") // name of config file (without extension)
 	viper.AddConfigPath("$HOME")   // adding home directory as first search path
@@ -57,26 +78,8 @@ func init() {
 	viper.SetDefault("cakey", "test_keys/user_ca")
 	viper.SetDefault("duration", 2*60)
 	viper.SetDefault("extensions", []string{"permit-pty"})
-	viper.SetDefault("force-command", false)
+	viper.SetDefault("forcecmd", false)
 	viper.SetDefault("port", 8000)
-
-	caKeyFile = viper.GetString("cakey")
-	durInt := viper.GetInt("duration")
-	confExts := viper.GetStringSlice("extensions")
-	forceCmd = viper.GetBool("force-command")
-	port = viper.GetInt("port")
-
-	// Check our extensions for validity
-	var errSlice []error
-	extensions, errSlice = validateExtensions(confExts)
-	if len(errSlice) > 0 {
-		for _, err := range errSlice {
-			log.Printf("%v", err)
-		}
-	}
-
-	// Convert our cert validity duration from int to time.Duration
-	duration = time.Duration(durInt) * time.Second
 }
 
 func validateExtensions(confExts []string) (map[string]string, []error) {

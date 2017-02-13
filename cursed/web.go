@@ -18,7 +18,7 @@ type httpParams struct {
 	userIP      string
 }
 
-func webHandler(w http.ResponseWriter, r *http.Request, caKey *ssh.Signer) {
+func webHandler(w http.ResponseWriter, r *http.Request, conf *config) {
 	p := httpParams{
 		bastionIP:   r.PostFormValue("bastionIP"),
 		bastionUser: r.PostFormValue("bastionUser"),
@@ -28,7 +28,7 @@ func webHandler(w http.ResponseWriter, r *http.Request, caKey *ssh.Signer) {
 		userIP:      r.PostFormValue("userIP"),
 	}
 
-	err := validateHTTPParams(p)
+	err := validateHTTPParams(p, conf)
 	if err != nil {
 		errMsg := fmt.Sprintf("Param validation failure: %v", err)
 		log.Printf(errMsg)
@@ -37,7 +37,7 @@ func webHandler(w http.ResponseWriter, r *http.Request, caKey *ssh.Signer) {
 	}
 
 	va := time.Now()
-	vb := time.Now().Add(duration)
+	vb := time.Now().Add(conf.dur)
 
 	fp := ""
 	pk, _, _, _, _ := ssh.ParseAuthorizedKey([]byte(p.key))
@@ -54,8 +54,7 @@ func webHandler(w http.ResponseWriter, r *http.Request, caKey *ssh.Signer) {
 	cc := certConfig{
 		certType:    ssh.UserCert,
 		command:     p.cmd,
-		duration:    duration,
-		extensions:  extensions,
+		extensions:  conf.exts,
 		keyID:       keyID,
 		principals:  []string{p.remoteUser},
 		srcAddr:     p.bastionIP,
@@ -63,7 +62,7 @@ func webHandler(w http.ResponseWriter, r *http.Request, caKey *ssh.Signer) {
 		validBefore: vb,
 	}
 
-	key, err := signPubKey(*caKey, []byte(p.key), cc)
+	key, err := signPubKey(conf.caSigner, []byte(p.key), cc)
 	if err != nil {
 		log.Printf("%v", err)
 	} else {
@@ -72,8 +71,8 @@ func webHandler(w http.ResponseWriter, r *http.Request, caKey *ssh.Signer) {
 
 }
 
-func validateHTTPParams(p httpParams) error {
-	if forceCmd && p.cmd == "" {
+func validateHTTPParams(p httpParams, conf *config) error {
+	if conf.ForceCmd && p.cmd == "" {
 		err := fmt.Errorf("cmd missing from request")
 		return err
 	}
