@@ -22,6 +22,8 @@ type config struct {
 	Extensions []string
 	ForceCmd   bool
 	Port       int
+	ProxyUser  string
+	ProxyPass  string
 }
 
 func main() {
@@ -51,7 +53,7 @@ func main() {
 
 	// Start web service
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		webHandler(w, r, &conf)
+		webHandler(w, r, conf)
 	})
 
 	log.Printf("Starting HTTP server on %d", conf.Port)
@@ -80,6 +82,8 @@ func init() {
 	viper.SetDefault("extensions", []string{"permit-pty"})
 	viper.SetDefault("forcecmd", false)
 	viper.SetDefault("port", 8000)
+	viper.SetDefault("proxyuser", "")
+	viper.SetDefault("proxypass", "")
 }
 
 func validateExtensions(confExts []string) (map[string]string, []error) {
