@@ -2,7 +2,7 @@
 
 CURSE is an SSH certificating signing server, built as an alternative to Netflix's BLESS tool, but without a dependency on AWS.
 
-This software is currently in a alpha state and not recommended for use.
+This software is currently in an alpha state and not recommended for use.
 
 Requirements
 ------------
