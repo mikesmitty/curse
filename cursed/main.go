@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"strconv"
 	"time"
 
 	"golang.org/x/crypto/ssh"
@@ -17,6 +16,7 @@ type config struct {
 	dur      time.Duration
 	exts     map[string]string
 
+	Addr       string
 	CAKey      string
 	Duration   int
 	Extensions []string
@@ -24,6 +24,8 @@ type config struct {
 	Port       int
 	ProxyUser  string
 	ProxyPass  string
+	SSLKey     string
+	SSLCert    string
 }
 
 func main() {
@@ -31,6 +33,14 @@ func main() {
 	err := viper.Unmarshal(&conf)
 	if err != nil {
 		log.Fatal("Unable to read config into struct: ", err)
+	}
+
+	// Require proxy authentication and SSL for security
+	if conf.ProxyUser == "" || conf.ProxyPass == "" {
+		log.Fatal("proxyuser and proxypass are required fields")
+	}
+	if conf.SSLKey == "" || conf.SSLCert == "" {
+		log.Fatal("sslkey and sslcert are required fields")
 	}
 
 	// Check our extensions for validity
@@ -56,10 +66,11 @@ func main() {
 		webHandler(w, r, conf)
 	})
 
-	log.Printf("Starting HTTP server on %d", conf.Port)
-	err = http.ListenAndServe(":"+strconv.Itoa(conf.Port), nil)
+	addrPort := fmt.Sprintf("%s:%d", conf.Addr, conf.Port)
+	log.Printf("Starting HTTPS server on %s", addrPort)
+	err = http.ListenAndServeTLS(addrPort, conf.SSLCert, conf.SSLKey, nil)
 	if err != nil {
-		log.Fatal("ListenAndServe: ", err)
+		log.Fatal("Listener service: ", err)
 	}
 }
 
@@ -68,8 +79,8 @@ func init() {
 	//	viper.SetConfigFile(cfgFile)
 	//}
 
-	viper.SetConfigName(".cursed") // name of config file (without extension)
-	viper.AddConfigPath("$HOME")   // adding home directory as first search path
+	viper.SetConfigName("cursed") // name of config file (without extension)
+	viper.AddConfigPath(".")      // adding home directory as first search path
 	viper.ReadInConfig()
 
 	// If a config file is found, read it in.
@@ -77,6 +88,7 @@ func init() {
 		log.Printf("Using config file: %s", viper.ConfigFileUsed())
 	}
 
+	viper.SetDefault("addr", "127.0.0.1")
 	viper.SetDefault("cakey", "test_keys/user_ca")
 	viper.SetDefault("duration", 2*60)
 	viper.SetDefault("extensions", []string{"permit-pty"})
@@ -84,6 +96,8 @@ func init() {
 	viper.SetDefault("port", 8000)
 	viper.SetDefault("proxyuser", "")
 	viper.SetDefault("proxypass", "")
+	viper.SetDefault("sslkey", "")
+	viper.SetDefault("sslcert", "")
 }
 
 func validateExtensions(confExts []string) (map[string]string, []error) {
