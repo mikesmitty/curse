@@ -14,8 +14,9 @@ Because SSH certificates are a relatively recent feature in OpenSSH, older versi
 
 TODO
 ----
-* Authentication
-* SSL support
+* ~Authentication~
+* Document Authentication Setup
+* ~SSL support~
 * Client app
 * More configuration options
 * Per-user access ACLs
