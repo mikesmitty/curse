@@ -61,6 +61,13 @@ func webHandler(w http.ResponseWriter, r *http.Request, conf config) {
 		fp = ssh.FingerprintLegacyMD5(pk)
 	}
 
+	// Check if we've seen this pubkey before and if it's too old
+	expired, err := checkPubKeyAge(conf, fp)
+	if expired {
+		http.Error(w, "Provided pubkey is too old. Please generate new key.", http.StatusForbidden)
+		return
+	}
+
 	// Generate our key_id for the certificate
 	//keyID := fmt.Sprintf("user[%s] from[%s] command[%s] sshKey[%s] ca[%s] valid to[%s]",
 	keyID := fmt.Sprintf("user[%s] from[%s] command[%s] sshKey[%s] valid to[%s]",

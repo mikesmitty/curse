@@ -8,19 +8,25 @@ import (
 
 	"golang.org/x/crypto/ssh"
 
+	"github.com/boltdb/bolt"
 	"github.com/spf13/viper"
 )
 
 type config struct {
-	caSigner ssh.Signer
-	dur      time.Duration
-	exts     map[string]string
+	bucketName  []byte
+	caSigner    ssh.Signer
+	db          *bolt.DB
+	dur         time.Duration
+	exts        map[string]string
+	keyLifeSpan time.Duration
 
 	Addr       string
-	CAKey      string
+	CAKeyFile  string
+	DBFile     string
 	Duration   int
 	Extensions []string
 	ForceCmd   bool
+	MaxKeyAge  int
 	Port       int
 	ProxyUser  string
 	ProxyPass  string
@@ -29,21 +35,24 @@ type config struct {
 }
 
 func main() {
+	// Read config into a struct
 	var conf config
 	err := viper.Unmarshal(&conf)
 	if err != nil {
-		log.Fatal("Unable to read config into struct: ", err)
+		log.Fatalf("Unable to read config into struct: %v", err)
 	}
+	// Hardcoding the DB bucket name
+	conf.bucketName = []byte("pubkeybirthdays")
 
 	// Require proxy authentication and SSL for security
 	if conf.ProxyUser == "" || conf.ProxyPass == "" {
-		log.Fatal("proxyuser and proxypass are required fields")
+		log.Fatalf("proxyuser and proxypass are required fields")
 	}
 	if conf.SSLKey == "" || conf.SSLCert == "" {
-		log.Fatal("sslkey and sslcert are required fields")
+		log.Fatalf("sslkey and sslcert are required fields")
 	}
 
-	// Check our extensions for validity
+	// Check our certificate extensions (permissions) for validity
 	var errSlice []error
 	conf.exts, errSlice = validateExtensions(conf.Extensions)
 	if len(errSlice) > 0 {
@@ -52,25 +61,34 @@ func main() {
 		}
 	}
 
-	// Convert our cert validity duration from int to time.Duration
+	// Convert our cert validity duration and pubkey lifespan from int to time.Duration
 	conf.dur = time.Duration(conf.Duration) * time.Second
+	conf.keyLifeSpan = time.Duration(conf.MaxKeyAge) * 24 * time.Hour
 
 	// Load the CA key into an ssh.Signer
-	conf.caSigner, err = loadCAKey(conf.CAKey)
+	conf.caSigner, err = loadCAKey(conf.CAKeyFile)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("%v", err)
 	}
 
-	// Start web service
+	// Open our key tracking database file
+	conf.db, err = bolt.Open(conf.DBFile, 0600, nil)
+	if err != nil {
+		log.Fatalf("Could not open database file %v", err)
+	}
+	defer conf.db.Close()
+
+	// Set our web handler function
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		webHandler(w, r, conf)
 	})
 
+	// Start our listener service
 	addrPort := fmt.Sprintf("%s:%d", conf.Addr, conf.Port)
 	log.Printf("Starting HTTPS server on %s", addrPort)
 	err = http.ListenAndServeTLS(addrPort, conf.SSLCert, conf.SSLKey, nil)
 	if err != nil {
-		log.Fatal("Listener service: ", err)
+		log.Fatalf("Listener service: %v", err)
 	}
 }
 
@@ -89,10 +107,12 @@ func init() {
 	}
 
 	viper.SetDefault("addr", "127.0.0.1")
-	viper.SetDefault("cakey", "test_keys/user_ca")
+	viper.SetDefault("cakeyfile", "test_keys/user_ca")
+	viper.SetDefault("dbfile", "./curse.db")
 	viper.SetDefault("duration", 2*60)
 	viper.SetDefault("extensions", []string{"permit-pty"})
 	viper.SetDefault("forcecmd", false)
+	viper.SetDefault("maxkeyage", 90)
 	viper.SetDefault("port", 8000)
 	viper.SetDefault("proxyuser", "")
 	viper.SetDefault("proxypass", "")
