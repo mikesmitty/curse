@@ -110,7 +110,7 @@ func init() {
 
 	viper.SetDefault("addr", "127.0.0.1")
 	viper.SetDefault("cakeyfile", "test_keys/user_ca")
-	viper.SetDefault("dbfile", "./curse.db")
+	viper.SetDefault("dbfile", "./cursed.db")
 	viper.SetDefault("duration", 2*60)
 	viper.SetDefault("extensions", []string{"permit-pty"})
 	viper.SetDefault("forcecmd", false)
