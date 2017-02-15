@@ -17,6 +17,7 @@ TODO
 * ~~Authentication~~
 * Document Authentication Setup
 * ~~SSL support~~
+* ~~Add support for maximum pubkey ages~~
 * Client app
 * More configuration options
 * Per-user access ACLs
