@@ -98,7 +98,9 @@ func init() {
 	//}
 
 	viper.SetConfigName("cursed") // name of config file (without extension)
-	viper.AddConfigPath(".")      // adding home directory as first search path
+	viper.AddConfigPath("/etc/cursed")
+	viper.AddConfigPath(".")
+	viper.AddConfigPath("$HOME")
 	viper.ReadInConfig()
 
 	// If a config file is found, read it in.
