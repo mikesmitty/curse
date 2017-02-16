@@ -32,6 +32,7 @@ type config struct {
 	ProxyPass  string
 	SSLKey     string
 	SSLCert    string
+	UserHeader string
 }
 
 func main() {
@@ -120,6 +121,7 @@ func init() {
 	viper.SetDefault("proxypass", "")
 	viper.SetDefault("sslkey", "")
 	viper.SetDefault("sslcert", "")
+	viper.SetDefault("userheader", "REMOTE_USER")
 }
 
 func validateExtensions(confExts []string) (map[string]string, []error) {

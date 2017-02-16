@@ -34,7 +34,7 @@ func webHandler(w http.ResponseWriter, r *http.Request, conf config) {
 	// Load our form parameters into a struct
 	p := httpParams{
 		bastionIP:   r.PostFormValue("bastionIP"),
-		bastionUser: r.PostFormValue("bastionUser"),
+		bastionUser: r.Header.Get(conf.UserHeader),
 		cmd:         r.PostFormValue("cmd"),
 		key:         r.PostFormValue("key"),
 		remoteUser:  r.PostFormValue("remoteUser"),
@@ -64,16 +64,16 @@ func webHandler(w http.ResponseWriter, r *http.Request, conf config) {
 	// Check if we've seen this pubkey before and if it's too old
 	expired, err := checkPubKeyAge(conf, fp)
 	if expired {
-		http.Error(w, "Provided pubkey is too old. Please generate new key.", http.StatusForbidden)
+		http.Error(w, "Submitted pubkey is too old. Please generate new key.", http.StatusForbidden)
 		return
 	}
 
 	// Generate our key_id for the certificate
 	//keyID := fmt.Sprintf("user[%s] from[%s] command[%s] sshKey[%s] ca[%s] valid to[%s]",
 	keyID := fmt.Sprintf("user[%s] from[%s] command[%s] sshKey[%s] valid to[%s]",
-		p.bastionUser, p.userIP, p.cmd, fp, vb.Format(time.RFC822))
+		p.bastionUser, p.userIP, p.cmd, fp, vb.Format(time.RFC3339))
 
-	log.Printf("Signing request: |%s|", keyID)
+	log.Printf("Request: |%s|", keyID)
 
 	// Set all of our certificate options
 	cc := certConfig{
@@ -109,7 +109,7 @@ func validateHTTPParams(p httpParams, conf config) error {
 		return err
 	}
 	if p.bastionUser == "" {
-		err := fmt.Errorf("bastionUser missing from request")
+		err := fmt.Errorf("%s missing from request", conf.UserHeader)
 		return err
 	}
 	if p.key == "" {
