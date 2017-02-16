@@ -4,7 +4,7 @@ CURSE is an SSH certificate signing server, built as an alternative to Netflix's
 
 ## Demo
 
-![gif](http://i.imgur.com/rHQgFsE.gif)
+![gif](http://i.imgur.com/UtDkYNo.gif)
 
 This software is currently in an alpha state and not recommended for use.
 
