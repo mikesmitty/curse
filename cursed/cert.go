@@ -24,7 +24,7 @@ type certConfig struct {
 	validBefore time.Time
 }
 
-func checkPubKeyAge(conf config, fp string) (bool, error) {
+func checkPubKeyAge(conf *config, fp string) (bool, error) {
 	var keyBirthday int64
 
 	// Check if this fingerprint exists in our DB
@@ -86,13 +86,13 @@ func loadCAKey(keyFile string) (ssh.Signer, error) {
 	// Read in our private key PEM file
 	key, err := ioutil.ReadFile(keyFile)
 	if err != nil {
-		err = fmt.Errorf("Failed to read CA key file: %v", err)
+		err = fmt.Errorf("Failed to read CA key file: '%v'", err)
 		return nil, err
 	}
 
 	sk, err := ssh.ParsePrivateKey(key)
 	if err != nil {
-		err = fmt.Errorf("Failed to parse CA key: %v", err)
+		err = fmt.Errorf("Failed to parse CA key: '%v'", err)
 		return nil, err
 	}
 
@@ -120,7 +120,7 @@ func signPubKey(signer ssh.Signer, rawKey []byte, cc certConfig) (*ssh.Certifica
 	// Make a cert from our pubkey
 	cert := &ssh.Certificate{
 		Key:             pubKey,
-		Serial:          1,
+		Serial:          0,
 		CertType:        cc.certType,
 		KeyId:           cc.keyID,
 		ValidPrincipals: cc.principals,

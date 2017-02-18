@@ -20,46 +20,27 @@ type config struct {
 	exts        map[string]string
 	keyLifeSpan time.Duration
 
-	Addr       string
-	CAKeyFile  string
-	DBFile     string
-	Duration   int
-	Extensions []string
-	ForceCmd   bool
-	MaxKeyAge  int
-	Port       int
-	ProxyUser  string
-	ProxyPass  string
-	SSLKey     string
-	SSLCert    string
-	UserHeader string
+	Addr            string
+	CAKeyFile       string
+	DBFile          string
+	Duration        int
+	Extensions      []string
+	ForceCmd        bool
+	MaxKeyAge       int
+	Port            int
+	ProxyUser       string
+	ProxyPass       string
+	RequireClientIP bool
+	SSLKey          string
+	SSLCert         string
+	UserHeader      string
 }
 
 func main() {
-	// Read config into a struct
-	var conf config
-	err := viper.Unmarshal(&conf)
+	// Process/load our config options
+	conf, err := getConf()
 	if err != nil {
-		log.Fatalf("Unable to read config into struct: %v", err)
-	}
-	// Hardcoding the DB bucket name
-	conf.bucketName = []byte("pubkeybirthdays")
-
-	// Require proxy authentication and SSL for security
-	if conf.ProxyUser == "" || conf.ProxyPass == "" {
-		log.Fatalf("proxyuser and proxypass are required fields")
-	}
-	if conf.SSLKey == "" || conf.SSLCert == "" {
-		log.Fatalf("sslkey and sslcert are required fields")
-	}
-
-	// Check our certificate extensions (permissions) for validity
-	var errSlice []error
-	conf.exts, errSlice = validateExtensions(conf.Extensions)
-	if len(errSlice) > 0 {
-		for _, err := range errSlice {
-			log.Printf("%v", err)
-		}
+		log.Fatal(err)
 	}
 
 	// Convert our cert validity duration and pubkey lifespan from int to time.Duration
@@ -110,7 +91,7 @@ func init() {
 	}
 
 	viper.SetDefault("addr", "127.0.0.1")
-	viper.SetDefault("cakeyfile", "test_keys/user_ca")
+	viper.SetDefault("cakeyfile", "")
 	viper.SetDefault("dbfile", "./cursed.db")
 	viper.SetDefault("duration", 2*60)
 	viper.SetDefault("extensions", []string{"permit-pty"})
@@ -119,6 +100,7 @@ func init() {
 	viper.SetDefault("port", 8000)
 	viper.SetDefault("proxyuser", "")
 	viper.SetDefault("proxypass", "")
+	viper.SetDefault("requireclientip", true)
 	viper.SetDefault("sslkey", "")
 	viper.SetDefault("sslcert", "")
 	viper.SetDefault("userheader", "REMOTE_USER")
@@ -149,4 +131,34 @@ func validateExtensions(confExts []string) (map[string]string, []error) {
 	}
 
 	return exts, errSlice
+}
+
+func getConf() (*config, error) {
+	// Read config into a struct
+	var conf config
+	err := viper.Unmarshal(&conf)
+	if err != nil {
+		return nil, fmt.Errorf("Unable to read config into struct: %v", err)
+	}
+	// Hardcoding the DB bucket name
+	conf.bucketName = []byte("pubkeybirthdays")
+
+	// Require proxy authentication and SSL for security
+	if conf.ProxyUser == "" || conf.ProxyPass == "" {
+		return nil, fmt.Errorf("proxyuser and proxypass are required fields")
+	}
+	if conf.SSLKey == "" || conf.SSLCert == "" {
+		return nil, fmt.Errorf("sslkey and sslcert are required fields")
+	}
+
+	// Check our certificate extensions (permissions) for validity
+	var errSlice []error
+	conf.exts, errSlice = validateExtensions(conf.Extensions)
+	if len(errSlice) > 0 {
+		for _, err := range errSlice {
+			log.Printf("%v", err)
+		}
+	}
+
+	return &conf, nil
 }

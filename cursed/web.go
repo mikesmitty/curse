@@ -18,7 +18,7 @@ type httpParams struct {
 	userIP      string
 }
 
-func webHandler(w http.ResponseWriter, r *http.Request, conf config) {
+func webHandler(w http.ResponseWriter, r *http.Request, conf *config) {
 	// Do basic auth with the reverse proxy to prevent side-stepping it
 	user, pass, ok := r.BasicAuth()
 	if !ok {
@@ -41,24 +41,32 @@ func webHandler(w http.ResponseWriter, r *http.Request, conf config) {
 		userIP:      r.PostFormValue("userIP"),
 	}
 
-	// Make sure we have everything we need from our parameters
-	err := validateHTTPParams(p, conf)
-	if err != nil {
-		errMsg := fmt.Sprintf("Param validation failure: %v", err)
-		log.Printf(errMsg)
-		http.Error(w, errMsg, http.StatusUnprocessableEntity)
-		return
-	}
-
 	// Set our certificate validity times
 	va := time.Now()
 	vb := time.Now().Add(conf.dur)
 
 	// Generate a fingerprint of the received public key for our key_id string
 	fp := ""
-	pk, _, _, _, _ := ssh.ParseAuthorizedKey([]byte(p.key))
+	pk, _, _, _, err := ssh.ParseAuthorizedKey([]byte(p.key))
 	if err == nil {
 		fp = ssh.FingerprintLegacyMD5(pk)
+	}
+
+	// Generate our key_id for the certificate
+	//keyID := fmt.Sprintf("user[%s] from[%s] command[%s] sshKey[%s] ca[%s] valid to[%s]",
+	keyID := fmt.Sprintf("user[%s] from[%s] command[%s] sshKey[%s] valid to[%s]",
+		p.bastionUser, p.userIP, p.cmd, fp, vb.Format(time.RFC3339))
+
+	// Log the request
+	log.Printf("Request: |%s|", keyID)
+
+	// Make sure we have everything we need from our parameters
+	err = validateHTTPParams(p, conf)
+	if err != nil {
+		errMsg := fmt.Sprintf("Param validation failure: %v", err)
+		log.Printf(errMsg)
+		http.Error(w, errMsg, http.StatusUnprocessableEntity)
+		return
 	}
 
 	// Check if we've seen this pubkey before and if it's too old
@@ -67,13 +75,6 @@ func webHandler(w http.ResponseWriter, r *http.Request, conf config) {
 		http.Error(w, "Submitted pubkey is too old. Please generate new key.", http.StatusForbidden)
 		return
 	}
-
-	// Generate our key_id for the certificate
-	//keyID := fmt.Sprintf("user[%s] from[%s] command[%s] sshKey[%s] ca[%s] valid to[%s]",
-	keyID := fmt.Sprintf("user[%s] from[%s] command[%s] sshKey[%s] valid to[%s]",
-		p.bastionUser, p.userIP, p.cmd, fp, vb.Format(time.RFC3339))
-
-	log.Printf("Request: |%s|", keyID)
 
 	// Set all of our certificate options
 	cc := certConfig{
@@ -98,9 +99,13 @@ func webHandler(w http.ResponseWriter, r *http.Request, conf config) {
 	w.Write(ssh.MarshalAuthorizedKey(key))
 }
 
-func validateHTTPParams(p httpParams, conf config) error {
+func validateHTTPParams(p httpParams, conf *config) error {
 	if conf.ForceCmd && p.cmd == "" {
 		err := fmt.Errorf("cmd missing from request")
+		return err
+	}
+	if conf.RequireClientIP && !validIP(p.userIP) {
+		err := fmt.Errorf("server error")
 		return err
 	}
 
