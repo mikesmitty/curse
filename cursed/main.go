@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"regexp"
 	"time"
 
 	"golang.org/x/crypto/ssh"
@@ -19,6 +20,7 @@ type config struct {
 	dur         time.Duration
 	exts        map[string]string
 	keyLifeSpan time.Duration
+	userRegex   *regexp.Regexp
 
 	Addr            string
 	CAKeyFile       string
@@ -80,9 +82,9 @@ func init() {
 	//}
 
 	viper.SetConfigName("cursed") // name of config file (without extension)
-	viper.AddConfigPath("/etc/cursed")
+	viper.AddConfigPath("/etc/curse/")
+	viper.AddConfigPath("$HOME/etc/")
 	viper.AddConfigPath(".")
-	viper.AddConfigPath("$HOME")
 	viper.ReadInConfig()
 
 	// If a config file is found, read it in.
@@ -92,12 +94,12 @@ func init() {
 
 	viper.SetDefault("addr", "127.0.0.1")
 	viper.SetDefault("cakeyfile", "")
-	viper.SetDefault("dbfile", "./cursed.db")
+	viper.SetDefault("dbfile", "$HOME/etc/cursed.db")
 	viper.SetDefault("duration", 2*60)
 	viper.SetDefault("extensions", []string{"permit-pty"})
 	viper.SetDefault("forcecmd", false)
 	viper.SetDefault("maxkeyage", 90)
-	viper.SetDefault("port", 8000)
+	viper.SetDefault("port", 81)
 	viper.SetDefault("proxyuser", "")
 	viper.SetDefault("proxypass", "")
 	viper.SetDefault("requireclientip", true)
@@ -151,6 +153,9 @@ func getConf() (*config, error) {
 		return nil, fmt.Errorf("sslkey and sslcert are required fields")
 	}
 
+	// Expand $HOME into service user's home path
+	conf.DBFile = expandHome(conf.DBFile)
+
 	// Check our certificate extensions (permissions) for validity
 	var errSlice []error
 	conf.exts, errSlice = validateExtensions(conf.Extensions)
@@ -159,6 +164,10 @@ func getConf() (*config, error) {
 			log.Printf("%v", err)
 		}
 	}
+
+	// Compile our user-matching regex (usernames are limited to 32 characters, must start
+	// with a-z or _, and contain only these characters: a-z, 0-9, - and _
+	conf.userRegex = regexp.MustCompile(`(?i)^[a-z_][a-z0-9_-]{0,31}$`)
 
 	return &conf, nil
 }

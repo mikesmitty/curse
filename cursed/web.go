@@ -26,7 +26,7 @@ func webHandler(w http.ResponseWriter, r *http.Request, conf *config) {
 		return
 	}
 	if user != conf.ProxyUser || pass != conf.ProxyPass {
-		log.Printf("Expected: %s:%s Received: %s:%s", conf.ProxyUser, conf.ProxyPass, user, pass)
+		log.Printf("Invalid proxy credentials")
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		return
 	}
@@ -37,7 +37,7 @@ func webHandler(w http.ResponseWriter, r *http.Request, conf *config) {
 		bastionUser: r.Header.Get(conf.UserHeader),
 		cmd:         r.PostFormValue("cmd"),
 		key:         r.PostFormValue("key"),
-		remoteUser:  r.PostFormValue("remoteUser"),
+		remoteUser:  r.PostFormValue("remoteUser"), // FIXME this should be re-evaluated as a daemon config option
 		userIP:      r.PostFormValue("userIP"),
 	}
 
@@ -48,9 +48,12 @@ func webHandler(w http.ResponseWriter, r *http.Request, conf *config) {
 	// Generate a fingerprint of the received public key for our key_id string
 	fp := ""
 	pk, _, _, _, err := ssh.ParseAuthorizedKey([]byte(p.key))
-	if err == nil {
-		fp = ssh.FingerprintLegacyMD5(pk)
+	if err != nil {
+		log.Printf("Unable to parse authorized key")
+		http.Error(w, "Unable to parse authorized key", http.StatusUnprocessableEntity)
+		return
 	}
+	fp = ssh.FingerprintLegacyMD5(pk)
 
 	// Generate our key_id for the certificate
 	//keyID := fmt.Sprintf("user[%s] from[%s] command[%s] sshKey[%s] ca[%s] valid to[%s]",
@@ -104,17 +107,15 @@ func validateHTTPParams(p httpParams, conf *config) error {
 		err := fmt.Errorf("cmd missing from request")
 		return err
 	}
-	if conf.RequireClientIP && !validIP(p.userIP) {
-		err := fmt.Errorf("server error")
-		return err
-	}
-
-	if p.bastionIP == "" {
-		err := fmt.Errorf("bastionIP missing from request")
+	if p.bastionIP == "" || !validIP(p.bastionIP) {
+		err := fmt.Errorf("bastionIP is invalid")
 		return err
 	}
 	if p.bastionUser == "" {
 		err := fmt.Errorf("%s missing from request", conf.UserHeader)
+		return err
+	} else if len(p.bastionUser) > 32 || !conf.userRegex.MatchString(p.bastionUser) {
+		err := fmt.Errorf("username is invalid")
 		return err
 	}
 	if p.key == "" {
@@ -125,8 +126,9 @@ func validateHTTPParams(p httpParams, conf *config) error {
 		err := fmt.Errorf("remoteUser missing from request")
 		return err
 	}
-	if p.userIP == "" {
-		err := fmt.Errorf("userIP missing from request")
+	if conf.RequireClientIP && !validIP(p.userIP) {
+		err := fmt.Errorf("invalid userIP")
+		log.Printf("invalid userIP: |%s|", p.userIP) // FIXME This should be re-evaluated in the logging refactor
 		return err
 	}
 
