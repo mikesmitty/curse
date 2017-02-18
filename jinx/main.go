@@ -16,10 +16,10 @@ import (
 )
 
 type config struct {
-	userIP string
+	certFile string
+	userIP   string
 
 	BastionIP string
-	CertFile  string
 	Insecure  bool
 	PubKey    string
 	SSHUser   string
@@ -38,13 +38,13 @@ func main() {
 	// Read in our pubkey file
 	pubKey, err := ioutil.ReadFile(conf.PubKey)
 	if err != nil {
-		fmt.Fprintln(os.Stderr, "Failed to read PubKey file: %v", err)
+		fmt.Fprintf(os.Stderr, "Failed to read PubKey file: %v\n", err)
 		os.Exit(1)
 	}
 
 	// Nag-mode for inadvertent/malicious insecure setting
 	if conf.Insecure {
-		fmt.Fprintln(os.Stderr, "Warning, your password is about to be sent insecurely. ctrl+c to quit")
+		fmt.Println("Warning, your password is about to be sent insecurely. ctrl+c to quit")
 	}
 
 	// Read in our username and password
@@ -52,14 +52,14 @@ func main() {
 	fmt.Printf("Username: ")
 	user, err := reader.ReadString('\n')
 	if err != nil {
-		fmt.Fprintln(os.Stderr, "Input error: %v", err)
+		fmt.Fprintf(os.Stderr, "Input error: %v\n", err)
 		os.Exit(1)
 	}
 	user = strings.TrimSpace(user)
 
 	pass, err := speakeasy.Ask("Password: ")
 	if err != nil {
-		fmt.Fprintln(os.Stderr, "Shell error: %v", err)
+		fmt.Fprintf(os.Stderr, "Shell error: %v\n", err)
 		os.Exit(1)
 	}
 
@@ -88,21 +88,21 @@ func main() {
 
 	resp, err := client.Do(req)
 	if err != nil {
-		fmt.Fprintln(os.Stderr, "Connection failed: %v", err)
+		fmt.Fprintf(os.Stderr, "Connection failed: %v\n", err)
 		os.Exit(1)
 	}
 	defer resp.Body.Close()
 
 	respBody, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		fmt.Fprintln(os.Stderr, "Failed to process response: %v", err)
+		fmt.Fprintf(os.Stderr, "Failed to process response: %v\n", err)
 		os.Exit(1)
 	}
 
 	if resp.StatusCode == 200 {
-		err = ioutil.WriteFile(conf.CertFile, respBody, 0600)
+		err = ioutil.WriteFile(conf.certFile, respBody, 0644)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Failed to write cert file: %v", err)
+			fmt.Fprintf(os.Stderr, "Failed to write cert file: %v\n", err)
 			os.Exit(1)
 		}
 	} else {
@@ -123,7 +123,6 @@ func init() {
 	}
 
 	viper.SetDefault("bastionip", "")
-	viper.SetDefault("certfile", "") // FIXME Need to revisit this
 	viper.SetDefault("insecure", false)
 	viper.SetDefault("pubkey", "")      // FIXME Need to revisit this
 	viper.SetDefault("sshuser", "root") // FIXME Need to revisit this?
@@ -150,6 +149,8 @@ func getConf() (*config, error) {
 		return nil, fmt.Errorf("pubkey is a required configuration field")
 	}
 
+	conf.certFile = strings.Replace(conf.PubKey, ".pub", "-cert.pub", 1)
+
 	// Check for non-SSL URL configuration (for warning)
 	if strings.HasPrefix(conf.URL, "http://") {
 		conf.Insecure = true
@@ -164,7 +165,6 @@ func getConf() (*config, error) {
 	sc = os.Getenv("SSH_CONNECTION")
 	scs = strings.Split(sc, " ")
 	if conf.userIP == "" && len(scs) != 0 {
-		fmt.Printf("%s\n", scs[0])
 		conf.userIP = scs[0]
 	}
 	if conf.userIP == "" {
