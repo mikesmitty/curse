@@ -21,6 +21,7 @@ Install
 These instructions assume the bastion host is hosting the curse daemon. Adjust instructions as necessary if hosting cursed on another server, but for security reasons the reverse proxy and cursed service should always be hosted on the same server at this time.
 
 **CURSE Daemon Installation**
+
 First, ensure you have a working Go environment (prebuilt packages will be available in the future).
 
 Add a curse service user (as root):
@@ -47,6 +48,7 @@ Copy the jinx client to your prefered system path:
     > sudo mv $GOPATH/bin/jinx /usr/bin/
 
 **Install cursed Systemd Service**
+
 You can use whatever method you prefer for running, but a systemd unit file has been added for convenience. Please note that the setcap command in the unit file is necessary to run on a privileged port as an unprivileged user. On Debian/Ubuntu you will likely need to install the `libcap2-bin` package, and the setcap binary is found at `/sbin/setcap` instead of `/usr/sbin/setcap`.
 
 Edit the unit file if necessary, and copy the unit file to your systemd system directory. This will either be `/usr/lib/systemd/system/` or `/lib/systemd/system/`, and you can find out which by running the following command: `pkg-config systemd --variable=systemdsystemunitdir`
@@ -58,6 +60,7 @@ Edit the unit file if necessary, and copy the unit file to your systemd system d
     > sudo systemctl start cursed.service
 
 **Configure cursed**
+
 Generate your CA keypair and move it to the cursed config directory. Elliptic curve algorithms (ed25519, ecdsa) are strongly recommended, provided all your servers support them. If elliptic curves are not viable in your environment, RSA with a bit size of 4096 or greater is recommended.
 
     > ssh-keygen -t ed25519 -f ./user_ca
@@ -92,6 +95,7 @@ Be sure to restrict file permissions on the cursed.yaml config file:
     > sudo chown -R curse. /opt/curse/etc/
 
 **Reverse Proxy Setup**
+
 The reverse proxy should have a valid SSL certificate configured. Feel free to use Let's Encrypt or any other reputable cert provider, as long as the certificate can be verified (i.e. not a self-signed certificate). If this is not feasible, you can use self-signed certificates and enable the insecure flag in the jinx config file, but this is not recommended whatsoever for production use.
 
 If using nginx, copy and edit the provided template, adjusting the following fields:
@@ -116,6 +120,7 @@ If you want to use htpasswd-file authentication simply uncomment the `auth_basic
     > sudo chown root. /etc/nginx/htpasswd
 
 **Configure jinx**
+
 Jinx can be configured with a system-wide file at `/etc/jinx/jinx.yaml`
 For testing purposes, `~/.jinx/jinx.yaml` can be used as well, but if `/etc/jinx/jinx.yaml` exists it will be ignored in favor of the system file.
 
@@ -133,6 +138,7 @@ Copy the example cursed config file and edit it. The following fields are requir
     > sudo chown root. /etc/jinx/jinx.yaml
 
 **Test Service**
+
 By this point, you should have a working instance of CURSE, and you generate a certificate by running `jinx`, then inspecting the certificate file, which will be created in the folder with your pubkey, by running (substitute the proper filename based on the name of your pubkey)`ssh-keygen -Lf ~/.ssh/id_ed25519-cert.pub`
 
 TODO
