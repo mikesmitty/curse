@@ -141,6 +141,15 @@ Copy the example cursed config file and edit it. The following fields are requir
 
 By this point, you should have a working instance of CURSE, and you generate a certificate by running `jinx`, then inspecting the certificate file, which will be created in the folder with your pubkey, by running (substitute the proper filename based on the name of your pubkey)`ssh-keygen -Lf ~/.ssh/id_ed25519-cert.pub`
 
+**Configuring Remote Hosts**
+
+In order for hosts to allow logins with certificates you'll need to do the following:
+
+* Add `TrustedUserCAKeys /etc/ssh/cas.pub` to `/etc/ssh/sshd_config`
+* Add the contents of your CA private key (`/opt/curse/etc/user_ca.pub`) to `/etc/ssh/cas.pub` like you would a regular `authorized_keys` file.
+
+Netflix recommends generating several CA keypairs and storing the private keys of all but one offline, in order to simplify CA key rotation. If you choose to do this you will want to also add the pubkeys of all of your CA keypairs to the `/etc/ssh/cas.pub` file at this time as well.
+
 TODO
 ----
 * ~~Authentication~~
