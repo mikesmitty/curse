@@ -47,7 +47,12 @@ func main() {
 
 	// Convert our cert validity duration and pubkey lifespan from int to time.Duration
 	conf.dur = time.Duration(conf.Duration) * time.Second
-	conf.keyLifeSpan = time.Duration(conf.MaxKeyAge) * 24 * time.Hour
+	if conf.MaxKeyAge < 0 {
+		// Negative MaxKeyAge means unlimited age keys, set lifespan to 100 years
+		conf.keyLifeSpan = 100 * 365 * 24 * time.Hour
+	} else {
+		conf.keyLifeSpan = time.Duration(conf.MaxKeyAge) * 24 * time.Hour
+	}
 
 	// Load the CA key into an ssh.Signer
 	conf.caSigner, err = loadCAKey(conf.CAKeyFile)
