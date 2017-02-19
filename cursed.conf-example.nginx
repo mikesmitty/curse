@@ -1,0 +1,22 @@
+server {
+  listen       443;
+  server_name  SERVERNAMEHERE;
+
+  ssl                 on;
+  ssl_certificate     /etc/nginx/cert.pem;
+  ssl_certificate_key /etc/nginx/key.pem;
+
+  location / {
+      root                 /usr/share/nginx/html;
+      index                index.html index.htm;
+
+      # Uncomment these fields if using htpasswd-style authentication
+      #auth_basic           "Restricted";
+      #auth_basic_user_file /etc/nginx/htpasswd;
+
+      proxy_pass       https://localhost:81;
+      proxy_set_header Host          $host;
+      proxy_set_header REMOTE_USER   $remote_user;
+      proxy_set_header Authorization 'Basic BASICAUTHSTRINGHERE';
+  }
+}

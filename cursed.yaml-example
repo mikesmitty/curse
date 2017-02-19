@@ -1,0 +1,37 @@
+## IP to bind listener on
+#addr: 127.0.0.1
+
+## Port to listen on (should be a privileged port < 1024 for security)
+#port: 81
+
+## Location of the SSH CA key
+#cakeyfile: /opt/curse/etc/user_ca
+
+## Embedded database used to track users' pubkey age
+#dbfile: /opt/curse/etc/cursed.db
+
+## Duration of SSH certificate validity in seconds
+#duration: 120
+
+## Permitted SSH extensions (only permit-pty is enabled by default)
+#extensions:
+#    - permit-X11-forwarding
+#    - permit-agent-forwarding
+#    - permit-port-forwarding
+#    - permit-pty
+#    - permit-user-rc
+
+## Saves the command to be run in the certificate, permitting only that one command
+#forcecmd: false
+
+## Maximum age of a user's SSH keypair for lifecycling
+## Set to -1 to disable key cycling
+#maxkeyage: 90
+
+## Credentials for the proxy to authenticate against cursed
+#proxyuser: PROXYUSER_GOES_HERE
+#proxypass: PROXYPASS_GOES_HERE
+
+## SSL key and cert for cursed service
+#sslcert: /opt/curse/etc/server.crt
+#sslkey: /opt/curse/etc/server.key

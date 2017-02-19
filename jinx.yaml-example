@@ -1,0 +1,11 @@
+## Outgoing bastion IP used in the SSH certificate
+#bastionip: 1.2.3.4
+
+## Turn on insecure ssl mode (NOT RECOMMENDED)
+#insecure: false
+
+## Location of the SSH pubkey to be signed
+pubkey: $HOME/.ssh/id_ed25519.pub
+
+## URL of the proxy server (change localhost to your server's hostname)
+#url: https://localhost/
