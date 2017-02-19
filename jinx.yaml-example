@@ -5,7 +5,10 @@
 #insecure: false
 
 ## Location of the SSH pubkey to be signed
-pubkey: $HOME/.ssh/id_ed25519.pub
+#pubkey: $HOME/.ssh/id_ed25519.pub
+
+## User account to on remote server
+#sshuser: root
 
 ## URL of the proxy server (change localhost to your server's hostname)
 #url: https://localhost/

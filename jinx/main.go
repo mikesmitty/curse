@@ -124,8 +124,8 @@ func init() {
 
 	viper.SetDefault("bastionip", "")
 	viper.SetDefault("insecure", false)
-	viper.SetDefault("pubkey", "")      // FIXME Need to revisit this
-	viper.SetDefault("sshuser", "root") // FIXME Need to revisit this?
+	viper.SetDefault("pubkey", "$HOME/.ssh/id_ed25519.pub") // FIXME Need to revisit this
+	viper.SetDefault("sshuser", "root")                     // FIXME Need to revisit this?
 	viper.SetDefault("timeout", 30)
 	viper.SetDefault("url", "https://localhost/")
 }
