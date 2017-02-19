@@ -50,7 +50,7 @@ func webHandler(w http.ResponseWriter, r *http.Request, conf *config) {
 	pk, _, _, _, err := ssh.ParseAuthorizedKey([]byte(p.key))
 	if err != nil {
 		log.Printf("Unable to parse authorized key")
-		http.Error(w, "Unable to parse authorized key", http.StatusUnprocessableEntity)
+		http.Error(w, "Unable to parse authorized key", http.StatusBadRequest)
 		return
 	}
 	fp = ssh.FingerprintLegacyMD5(pk)
@@ -68,14 +68,14 @@ func webHandler(w http.ResponseWriter, r *http.Request, conf *config) {
 	if err != nil {
 		errMsg := fmt.Sprintf("Param validation failure: %v", err)
 		log.Printf(errMsg)
-		http.Error(w, errMsg, http.StatusUnprocessableEntity)
+		http.Error(w, errMsg, http.StatusBadRequest)
 		return
 	}
 
 	// Check if we've seen this pubkey before and if it's too old
 	expired, err := checkPubKeyAge(conf, fp)
 	if expired {
-		http.Error(w, "Submitted pubkey is too old. Please generate new key.", http.StatusForbidden)
+		http.Error(w, "Submitted pubkey is too old. Please generate new key.", http.StatusUnprocessableEntity)
 		return
 	}
 
