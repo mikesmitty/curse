@@ -112,9 +112,9 @@ func main() {
 }
 
 func init() {
-	viper.SetConfigName(".jinx")     // name of config file (without extension)
-	viper.AddConfigPath("/etc/jinx") // /etc/jinx/.jinx.{yaml,toml,json} makes little sense. FIXME
-	viper.AddConfigPath("$HOME")
+	viper.SetConfigName("jinx") // name of config file (without extension)
+	viper.AddConfigPath("/etc/jinx")
+	viper.AddConfigPath("$HOME/.jinx/")
 	viper.ReadInConfig()
 
 	// If a config file is found, read it in.
@@ -149,6 +149,10 @@ func getConf() (*config, error) {
 		return nil, fmt.Errorf("pubkey is a required configuration field")
 	}
 
+	// Replace $HOME with the current user's home directory
+	conf.PubKey = expandHome(conf.PubKey)
+
+	// Generate our certificate filepath from the pubkey path
 	conf.certFile = strings.Replace(conf.PubKey, ".pub", "-cert.pub", 1)
 
 	// Check for non-SSL URL configuration (for warning)
