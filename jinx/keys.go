@@ -33,7 +33,7 @@ func getPubKey(conf *config) ([]byte, error) {
 			}
 		}
 		if _, err := os.Stat(conf.pubKeyFile); os.IsNotExist(err) {
-			fmt.Fprintf(os.Stderr, "Configured SSH private key missing (%s), generating new key pair.\n", conf.pubKeyFile)
+			fmt.Fprintf(os.Stderr, "Configured SSH public key missing (%s), generating new key pair.\n", conf.pubKeyFile)
 			err = saveNewKeyPair(conf)
 			if err != nil {
 				return nil, fmt.Errorf("Failed to generate key pair: %v", err)
