@@ -49,7 +49,7 @@ func webHandler(w http.ResponseWriter, r *http.Request, conf *config) {
 	fp := ""
 	pk, _, _, _, err := ssh.ParseAuthorizedKey([]byte(p.key))
 	if err != nil {
-		log.Printf("Unable to parse authorized key")
+		log.Printf("Unable to parse authorized key |%s|", p.key)
 		http.Error(w, "Unable to parse authorized key", http.StatusBadRequest)
 		return
 	}
@@ -92,14 +92,14 @@ func webHandler(w http.ResponseWriter, r *http.Request, conf *config) {
 	}
 
 	// Sign the public key
-	key, err := signPubKey(conf.caSigner, []byte(p.key), cc)
+	authorizedKey, err := signPubKey(conf.caSigner, []byte(p.key), cc)
 	if err != nil {
 		log.Printf("%v", err)
 		http.Error(w, "Server error", http.StatusInternalServerError)
 		return
 	}
 
-	w.Write(ssh.MarshalAuthorizedKey(key))
+	w.Write(authorizedKey)
 }
 
 func validateHTTPParams(p httpParams, conf *config) error {

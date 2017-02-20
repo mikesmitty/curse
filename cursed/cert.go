@@ -37,6 +37,11 @@ func checkPubKeyAge(conf *config, fp string) (bool, error) {
 
 		// Get timestamp string from database and convert to int
 		val := bucket.Get([]byte(fp))
+		if len(val) == 0 {
+			keyBirthday = 0
+			return nil
+		}
+
 		// Convert byte array to string to int64 (gross, I know)
 		kb, err := strconv.ParseInt(string(val), 10, 64)
 		if err != nil {
@@ -99,8 +104,8 @@ func loadCAKey(keyFile string) (ssh.Signer, error) {
 	return sk, nil
 }
 
-func signPubKey(signer ssh.Signer, rawKey []byte, cc certConfig) (*ssh.Certificate, error) {
-	pubKey, _, _, _, err := ssh.ParseAuthorizedKey(rawKey)
+func signPubKey(signer ssh.Signer, rawKey []byte, cc certConfig) ([]byte, error) {
+	pubKey, _, _, _, err := ssh.ParseAuthorizedKey(rawKey) // FIXME look into handling additional fields
 	if err != nil {
 		err = fmt.Errorf("Failed to parse pubkey: %v", err)
 		return nil, err
@@ -134,6 +139,7 @@ func signPubKey(signer ssh.Signer, rawKey []byte, cc certConfig) (*ssh.Certifica
 		err = fmt.Errorf("Failed to sign pubkey: %v", err)
 		return nil, err
 	}
+	authorizedKey := ssh.MarshalAuthorizedKey(cert)
 
-	return cert, err
+	return authorizedKey, err
 }
