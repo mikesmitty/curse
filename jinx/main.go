@@ -2,29 +2,33 @@ package main
 
 import (
 	"bufio"
-	"crypto/tls"
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"net/url"
 	"os"
+	"regexp"
 	"strings"
-	"time"
 
 	"github.com/bgentry/speakeasy"
 	"github.com/spf13/viper"
 )
 
 type config struct {
-	certFile string
-	userIP   string
+	certFile    string
+	privKeyFile string
+	pubKeyFile  string
+	userIP      string
 
-	BastionIP string
-	Insecure  bool
-	PubKey    string
-	SSHUser   string
-	Timeout   int
-	URL       string
+	AutoGenKeys   bool
+	BastionIP     string
+	Insecure      bool
+	KeyGenBitSize int
+	KeyGenPubKey  string
+	KeyGenType    string
+	PubKey        string
+	SSHUser       string
+	Timeout       int
+	URL           string
 }
 
 func main() {
@@ -35,10 +39,10 @@ func main() {
 		os.Exit(1)
 	}
 
-	// Read in our pubkey file
-	pubKey, err := ioutil.ReadFile(conf.PubKey)
+	// Get our pubkey
+	pubKey, err := getPubKey(conf)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Failed to read PubKey file: %v\n", err)
+		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
 
@@ -63,51 +67,35 @@ func main() {
 		os.Exit(1)
 	}
 
-	/* Using basic auth for the initial prototype, since presumably this SSL certificate will be valid and
-	relatively insusceptible to MITM. Also, the digest auth client libraries I've seen are kinda bad.
-	I plan to come back and try writing a digest library once I get the prototype functional (and not in
-	a time crunch to make a demo). */
-	tr := &http.Transport{
-		TLSClientConfig: &tls.Config{InsecureSkipVerify: conf.Insecure},
-	}
-	client := &http.Client{
-		Transport: tr,
-		Timeout:   time.Duration(conf.Timeout) * time.Second,
-	}
-
-	// Assemble our POST form values
-	form := url.Values{}
-	form.Add("bastionIP", conf.BastionIP)
-	form.Add("key", string(pubKey))
-	form.Add("remoteUser", conf.SSHUser)
-	form.Add("userIP", conf.userIP)
-
-	req, err := http.NewRequest("POST", conf.URL, strings.NewReader(form.Encode()))
-	req.SetBasicAuth(user, pass)
-	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
-
-	resp, err := client.Do(req)
+	// Send our pubkey to be signed
+	respBody, statusCode, err := requestCert(conf, user, pass, string(pubKey))
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Connection failed: %v\n", err)
-		os.Exit(1)
-	}
-	defer resp.Body.Close()
-
-	respBody, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Failed to process response: %v\n", err)
+		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
 
-	if resp.StatusCode == 200 {
+	switch statusCode {
+	case http.StatusOK:
 		err = ioutil.WriteFile(conf.certFile, respBody, 0644)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Failed to write cert file: %v\n", err)
 			os.Exit(1)
 		}
-	} else {
+	case http.StatusUnprocessableEntity:
+		if conf.AutoGenKeys {
+			fmt.Fprintln(os.Stderr, "Server denied pubkey due to age. Regenerating keypairs. Run command again after keys are regenerated.")
+			err = saveNewKeyPair(conf)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "Failed to generate key pair: %v\n", err)
+				os.Exit(1)
+			}
+		} else {
+			fmt.Fprintln(os.Stderr, "Server denied pubkey due to age and automatic regeneration disabled. Please manually regenerate your SSH keys.")
+			os.Exit(1)
+		}
+	default:
 		fmt.Fprintf(os.Stderr, string(respBody))
-		os.Exit(resp.StatusCode)
+		os.Exit(statusCode)
 	}
 }
 
@@ -122,10 +110,14 @@ func init() {
 		//log.Printf("Using config file: %s", viper.ConfigFileUsed())
 	}
 
+	viper.SetDefault("autogenkeys", true)
 	viper.SetDefault("bastionip", "")
 	viper.SetDefault("insecure", false)
-	viper.SetDefault("pubkey", "$HOME/.ssh/id_ed25519.pub") // FIXME Need to revisit this
-	viper.SetDefault("sshuser", "root")                     // FIXME Need to revisit this?
+	viper.SetDefault("keygenbitsize", 2048)
+	viper.SetDefault("keygenpubkey", "$HOME/.ssh/id_jinx.pub")
+	viper.SetDefault("keygentype", "ed25519")
+	viper.SetDefault("pubkey", "$HOME/.ssh/id_ed25519.pub")
+	viper.SetDefault("sshuser", "root") // FIXME Need to revisit this?
 	viper.SetDefault("timeout", 30)
 	viper.SetDefault("url", "https://localhost/")
 }
@@ -142,7 +134,7 @@ func getConf() (*config, error) {
 	if conf.BastionIP == "" {
 		conf.BastionIP, _ = getBastionIP()
 		if conf.BastionIP == "" {
-			return nil, fmt.Errorf("could not find server's public IP. bastionip field required")
+			return nil, fmt.Errorf("Could not find server's public IP. bastionip field required")
 		}
 	}
 	if conf.PubKey == "" {
@@ -151,9 +143,21 @@ func getConf() (*config, error) {
 
 	// Replace $HOME with the current user's home directory
 	conf.PubKey = expandHome(conf.PubKey)
+	conf.KeyGenPubKey = expandHome(conf.KeyGenPubKey)
 
-	// Generate our certificate filepath from the pubkey path
-	conf.certFile = strings.Replace(conf.PubKey, ".pub", "-cert.pub", 1)
+	// Generate our key and certificate filepaths
+	r := regexp.MustCompile(`\.pub$`)
+	if conf.AutoGenKeys {
+		conf.certFile = r.ReplaceAllString(conf.KeyGenPubKey, "-cert.pub")
+		conf.pubKeyFile = conf.KeyGenPubKey
+	} else {
+		conf.certFile = r.ReplaceAllString(conf.PubKey, "-cert.pub")
+		conf.pubKeyFile = conf.PubKey
+	}
+	conf.privKeyFile = r.ReplaceAllString(conf.pubKeyFile, "")
+	if conf.privKeyFile == conf.pubKeyFile {
+		return nil, fmt.Errorf("Invalid public key name (must end in .pub): %s", conf.pubKeyFile)
+	}
 
 	// Check for non-SSL URL configuration (for warning)
 	if strings.HasPrefix(conf.URL, "http://") {

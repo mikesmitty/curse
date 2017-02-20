@@ -127,8 +127,8 @@ For testing purposes, `~/.jinx/jinx.yaml` can be used as well, but if `/etc/jinx
 
 Copy the example cursed config file and edit it. The following fields are required:
 * bastionip (if auto-detection of your bastion server's public IP fails)
-* pubkey (location of your SSH pubkey to be signed. In the future this will be unnecessary and jinx will generate/cycle keys automatically, and only a key type will be required)
 * url (URL of the proxy server, which should match your reverse proxy's hostname and SSL certificate)
+
 
     > cp $GOPATH/src/github.com/mikesmitty/curse/jinx.yaml-example jinx.yaml
     > vim jinx.yaml
@@ -159,7 +159,7 @@ TODO
 * ~~Add support for maximum pubkey ages in daemon~~
 * ~~Client app~~
 * ~~More configuration options~~
-* Add support for maximum pubkey ages in client and automatic key regeneration
+* ~~Add support for maximum pubkey ages in client and automatic key regeneration~~
 * Add support for key algorithm enforcement/auto-key-generation
 * RPM/DEB packages for easier installation
 * Per-user access ACLs

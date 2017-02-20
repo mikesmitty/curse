@@ -1,10 +1,26 @@
+## Automatically generate keys when requested by the CA
+#autogenkeys: true
+
 ## Outgoing bastion IP used in the SSH certificate
 #bastionip: 1.2.3.4
 
 ## Turn on insecure ssl mode (NOT RECOMMENDED)
 #insecure: false
 
-## Location of the SSH pubkey to be signed
+## Type of SSH keys to use during auto-generation (ssh-keygen -t ____ )
+## Valid types: ed25519, ecdsa, rsa
+#keygentype: ed25519
+
+## Bit length of SSH keys to use during auto-generation (ssh-keygen -t <type> -b ____ )
+## Valid only with keygentype: rsa or ecdsa
+## Valid ecdsa values: 256, 384, 521
+#keygenlength: 2048
+
+## Filename of the SSH private key to be generated if autogenkeys is enabled,
+## with matching public key file
+#keygenpubkey: $HOME/.ssh/id_jinx.pub
+
+## Location of the SSH pubkey to be signed (if autogenkeys is disabled)
 #pubkey: $HOME/.ssh/id_ed25519.pub
 
 ## User account to on remote server
