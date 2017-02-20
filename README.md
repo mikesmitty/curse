@@ -160,7 +160,7 @@ TODO
 * ~~Client app~~
 * ~~More configuration options~~
 * ~~Add support for maximum pubkey ages in client and automatic key regeneration~~
-* Add support for key algorithm enforcement/auto-key-generation
+* ~~Add support for key algorithm enforcement/auto-key-generation~~
 * RPM/DEB packages for easier installation
 * Per-user access ACLs
 
