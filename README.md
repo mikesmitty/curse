@@ -130,6 +130,7 @@ Copy the example cursed config file and edit it. The following fields are requir
 * url (URL of the proxy server, which should match your reverse proxy's hostname and SSL certificate)
 
 
+
     > cp $GOPATH/src/github.com/mikesmitty/curse/jinx.yaml-example jinx.yaml
     > vim jinx.yaml
     > sudo mkdir /etc/jinx
