@@ -122,14 +122,13 @@ If you want to use htpasswd-file authentication simply uncomment the `auth_basic
 
 **Configure jinx**
 
-Jinx can be configured with a system-wide file at `/etc/jinx/jinx.yaml`
-For testing purposes, `~/.jinx/jinx.yaml` can be used as well, but if `/etc/jinx/jinx.yaml` exists it will be ignored in favor of the system file.
-
-Copy the example cursed config file and edit it. The following fields are required:
+Copy the example cursed config file and edit it with the commands below. The following fields are required:
 * bastionip (if auto-detection of your bastion server's public IP fails)
+* pubkey (if you do not want CURSE to periodically regenerate your SSH keys)
 * url (URL of the proxy server, which should match your reverse proxy's hostname and SSL certificate)
 
-
+Note: Jinx can be configured with a system-wide file at `/etc/jinx/jinx.yaml`
+For testing purposes, `~/.jinx/jinx.yaml` can be used as well, but if `/etc/jinx/jinx.yaml` exists it will be ignored in favor of the system file.
 
     > cp $GOPATH/src/github.com/mikesmitty/curse/jinx.yaml-example jinx.yaml
     > vim jinx.yaml
