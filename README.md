@@ -36,7 +36,7 @@ After install setup (generates keys and proxy config):
     $ sudo bash /opt/curse/sbin/setup.sh
     $ sudo cp -a /opt/curse/etc/cursed.conf-nginx /etc/nginx/conf.d/cursed.conf
 
-Set your `server_name` to match your valid SSL certificates for the reverse proxy and configure your preferred authentication:
+Install/configure your SSL certificates authentication settings for the reverse proxy. Don't forget to set your `server_name` to match your valid SSL certificates as well:
 
     $ sudo vim /etc/nginx/conf.d/cursed.conf
 
