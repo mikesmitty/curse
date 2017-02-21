@@ -113,7 +113,7 @@ At this point you will also need to configure authentication for the reverse pro
     $ sudo chown root. /etc/nginx/conf.d/cursed.conf
     $ sudo chmod 600 /etc/nginx/conf.d/cursed.conf
 
-If you want to use htpasswd-file authentication simply uncomment the `auth_basic` and `auth_basic_user_file` entries in the provided cursed.conf-exmaple.nginx file and add users to your htpasswd file:
+If you want to use htpasswd-file authentication simply uncomment the `auth_basic` and `auth_basic_user_file` entries in the provided cursed.conf-example.nginx file and add users to your htpasswd file:
 
     $ sudo yum install httpd-tools # install the htpasswd utility
     $ sudo htpasswd -c /etc/nginx/htpasswd USERNAME_GOES_HERE
