@@ -16,27 +16,35 @@ chmod 700 "$CURSE_ROOT"
 chown curse. "$CURSE_ROOT"
 
 # Generate SSH CA keypair
-echo "Generating $CURSE_ALGO SSH CA certificates..."
-ssh-keygen -q -N "" -t "$CURSE_ALGO" -f "$CURSE_ROOT/etc/user_ca"
-chmod 600 "$CURSE_ROOT/etc/user_ca"
-chmod 644 "$CURSE_ROOT/etc/user_ca.pub"
+if [ ! -e "$CURSE_ROOT/etc/user_ca" ] && [ ! -e "$CURSE_ROOT/etc/user_ca.pub" ]; then
+    echo "Generating $CURSE_ALGO SSH CA certificates..."
+    ssh-keygen -q -N "" -t "$CURSE_ALGO" -f "$CURSE_ROOT/etc/user_ca"
+    chmod 600 "$CURSE_ROOT/etc/user_ca"
+    chmod 644 "$CURSE_ROOT/etc/user_ca.pub"
+else
+    echo "SSH CA keypair already exists. Skipping generation."
+fi
 
 echo -e "$CURSE_ALGO SSH CA keypair generated. Here is the CA PubKey for adding to your servers:\n$(cat \"$CURSE_ROOT/etc/user_ca.pub\")\nThis key can also be found at $CURSE_ROOT/etc/user_ca.pub"
 
 # Generate SSL key and certificate
-echo "Generating SSL certificates..."
-openssl ecparam -genkey -name secp384r1 -out "$CURSE_ROOT/etc/server.key"
-openssl req -new -x509 -sha256 -key "$CURSE_ROOT/etc/server.key" -out "$CURSE_ROOT/etc/server.crt" -days 730
-chmod 600 "$CURSE_ROOT/etc/server.key"
-chmod 644 "$CURSE_ROOT/etc/server.crt"
+if [ ! -e "$CURSE_ROOT/etc/server.key" ] && [ ! -e "$CURSE_ROOT/etc/server.crt" ]; then
+    echo "Generating SSL certificates..."
+    openssl ecparam -genkey -name secp384r1 -out "$CURSE_ROOT/etc/server.key"
+    openssl req -new -x509 -sha256 -key "$CURSE_ROOT/etc/server.key" -out "$CURSE_ROOT/etc/server.crt" -days 730
+    chmod 600 "$CURSE_ROOT/etc/server.key"
+    chmod 644 "$CURSE_ROOT/etc/server.crt"
+else
+    echo "SSL certificates already exist. Skipping generation."
+fi
 
 # Generate credentials for configuration files
-echo "Generating proxy credentials..."
-PROXY_USER=$(openssl rand -base64 24)
-PROXY_PASS=$(openssl rand -base64 24)
-AUTH_STRING=$(echo -n "$PROXY_USER:$PROXY_PASS" | base64)
-
 if [ ! -e "$CURSE_ROOT/etc/curse.yaml" ]; then
+    echo "Generating proxy credentials..."
+    PROXY_USER=$(openssl rand -base64 24)
+    PROXY_PASS=$(openssl rand -base64 24)
+    AUTH_STRING=$(echo -n "$PROXY_USER:$PROXY_PASS" | base64)
+
     sed -e "s|PROXYUSER_GOES_HERE|$PROXY_USER|" -e "s|PROXYUSER_GOES_HERE|$PROXY_USER|" "$CURSE_ROOT/etc/cursed.yaml-example" > "$CURSE_ROOT/etc/cursed.yaml"
     chmod 600 "$CURSE_ROOT/etc/cursed.yaml"
     chown curse. "$CURSE_ROOT/etc/cursed.yaml"
