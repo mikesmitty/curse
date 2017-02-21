@@ -108,8 +108,8 @@ func init() {
 	viper.SetDefault("proxyuser", "")
 	viper.SetDefault("proxypass", "")
 	viper.SetDefault("requireclientip", true)
-	viper.SetDefault("sslkey", "")
-	viper.SetDefault("sslcert", "")
+	viper.SetDefault("sslkey", "/opt/curse/etc/server.key")
+	viper.SetDefault("sslcert", "/opt/curse/etc/server.crt")
 	viper.SetDefault("userheader", "REMOTE_USER")
 }
 
