@@ -7,7 +7,7 @@ Description=CURSED Ephemeral SSH Certificate Authority
 # bypass authentication at the reverse proxy, generating certificates imitating other users
 #ExecStartPre=SETCAP 'cap_net_bind_service=+ep' /opt/curse/sbin/cursed
 ExecStart=/opt/curse/sbin/cursed
-RootDirectory=/opt/curse
+#RootDirectory=/opt/curse
 User=curse
 Environment=HOME=/opt/curse
 
