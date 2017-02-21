@@ -105,7 +105,7 @@ If using nginx, copy and edit the provided template, adjusting the following fie
 * ssl_certificate_key (ssl key filename, should be chowned root, chmod 600)
 * proxy_set_header Authorization (replace BASICAUTHSTRINGHERE with a base64-encoded string of the proxyuser and proxypass fields from the cursed setup earlier, like so: `echo -n 'proxyuser_goes_here:proxypass_goes_here' | base64`
 
-At this point you will also need to configure authentication for the reverse proxy, which provides authentication for the curse daemon. You can use any authentication that nginx (or apache, provided you have opted for it) provides, such as htpasswd file authentication, local authentication using PAM, or LDAP authentication. If using htpasswd authentication be sure to `chown root.` and `chmod 600` your htpasswd file.
+At this point you will also need to configure authentication for the reverse proxy, which provides authentication for the curse daemon. You can use any authentication that nginx (or apache, provided you have opted for it) provides, such as htpasswd file authentication, local authentication using PAM, or LDAP authentication. If using htpasswd authentication be sure to `chown root.` your htpasswd file.
 
     $ cp $GOPATH/src/github.com/mikesmitty/curse/cursed.conf-example.nginx cursed.conf
     $ vim cursed.conf
