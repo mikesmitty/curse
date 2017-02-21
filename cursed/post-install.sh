@@ -31,7 +31,8 @@ echo -e "$CURSE_ALGO SSH CA keypair generated. Here is the CA PubKey for adding 
 if [ ! -e "$CURSE_ROOT/etc/server.key" ] && [ ! -e "$CURSE_ROOT/etc/server.crt" ]; then
     echo "Generating SSL certificates..."
     openssl ecparam -genkey -name secp384r1 -out "$CURSE_ROOT/etc/server.key"
-    openssl req -new -x509 -sha256 -key "$CURSE_ROOT/etc/server.key" -out "$CURSE_ROOT/etc/server.crt" -days 730
+    openssl req -new -x509 -sha256 -key "$CURSE_ROOT/etc/server.key" -out "$CURSE_ROOT/etc/server.crt" -days 730 \
+        -subj "/C=US/ST=State/L=Location/O=Org/CN=CURSE"
     chmod 600 "$CURSE_ROOT/etc/server.key"
     chmod 644 "$CURSE_ROOT/etc/server.crt"
 else
