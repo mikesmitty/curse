@@ -117,7 +117,6 @@ If you want to use htpasswd-file authentication simply uncomment the `auth_basic
 
     $ sudo yum install httpd-tools # install the htpasswd utility
     $ sudo htpasswd -c /etc/nginx/htpasswd USERNAME_GOES_HERE
-    $ sudo chmod 600 /etc/nginx/htpasswd
     $ sudo chown root. /etc/nginx/htpasswd
 
 **Configure jinx**
