@@ -6,8 +6,8 @@
 # libcap || libcap2-bin (debian/ubuntu)
 
 SCRIPT_NAME=$0
-CURSE_ROOT=${1:-"/opt/curse"}
-CURSE_ALGO=${2:-"ed25519"}
+CURSE_ROOT="/opt/curse"
+CURSE_ALGO="ed25519"
 
 # Create curse system user account
 NOLOGIN=$(which nologin)
