@@ -129,7 +129,7 @@ func genKeyPair(conf *config) ([]byte, []byte, error) {
 		privateKeyPEM = pem.EncodeToMemory(pemKey)
 		authorizedKey = ssh.MarshalAuthorizedKey(publicKey)
 	default:
-		fmt.Errorf("Key type '%s' not recognized. Unable to generate new keypair.", conf.KeyGenType)
+		return nil, nil, fmt.Errorf("Key type '%s' not recognized. Unable to generate new keypair.", conf.KeyGenType)
 	}
 
 	return authorizedKey, privateKeyPEM, nil
