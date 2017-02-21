@@ -62,6 +62,9 @@ fi
 # Fix curse directory permissions
 chown -R curse. "$CURSE_ROOT"
 
+# This will allow us to run on a privileged port without root privileges
+/usr/sbin/setcap 'cap_net_bind_service=+ep' /opt/curse/sbin/cursed
+
 # Install systemd service
 PKG_CONFIG=$(pkg-config systemd --variable=systemdsystemunitdir)
 if  [ "$PKG_CONFIG" != "" ]; then
@@ -74,6 +77,3 @@ if  [ "$PKG_CONFIG" != "" ]; then
 else
     echo "Systemd unit file directory not found, you will need to install and configure cusred.service manually, or create a startup script for cursed"
 fi
-
-# This will allow us to run on a privileged port without root privileges
-/usr/sbin/setcap 'cap_net_bind_service=+ep' /opt/curse/sbin/cursed
