@@ -45,7 +45,7 @@ if [ ! -e "$CURSE_ROOT/etc/curse.yaml" ]; then
     PROXY_PASS=$(openssl rand -base64 12)
     AUTH_STRING=$(echo -n "$PROXY_USER:$PROXY_PASS" | base64)
 
-    sed -e "s|PROXYUSER_GOES_HERE|$PROXY_USER|" -e "s|PROXYUSER_GOES_HERE|$PROXY_USER|" "$CURSE_ROOT/etc/cursed.yaml-example" >"$CURSE_ROOT/etc/cursed.yaml"
+    sed -e 's/#proxy/proxy/' -e "s|PROXYUSER_GOES_HERE|$PROXY_USER|" -e "s|PROXYPASS_GOES_HERE|$PROXY_PASS|" "$CURSE_ROOT/etc/cursed.yaml-example" >"$CURSE_ROOT/etc/cursed.yaml"
     chmod 600 "$CURSE_ROOT/etc/cursed.yaml"
     chown curse. "$CURSE_ROOT/etc/cursed.yaml"
 
