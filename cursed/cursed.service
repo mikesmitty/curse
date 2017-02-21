@@ -5,7 +5,7 @@ Description=CURSED Ephemeral SSH Certificate Authority
 # setcap is run on the daemon before running to ensure we can bind to a low port without root privileges.
 # If we were to run on a high port an unprivileged user could use the port to gain direct access, and
 # bypass authentication at the reverse proxy, generating certificates imitating other users
-ExecStartPre=/sbin/setcap 'cap_net_bind_service=+ep' /opt/curse/sbin/cursed
+ExecStartPre=SETCAP 'cap_net_bind_service=+ep' /opt/curse/sbin/cursed
 ExecStart=/opt/curse/sbin/cursed
 RootDirectory=/opt/curse
 User=curse
