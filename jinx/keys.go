@@ -87,7 +87,7 @@ func genKeyPair(conf *config) ([]byte, []byte, error) {
 		} else if conf.KeyGenBitSize == 521 {
 			privateKey, err = ecdsa.GenerateKey(elliptic.P521(), rand.Reader)
 		} else {
-			return nil, nil, fmt.Errorf("Invalid keygenbitsize for ecdsa: %s", conf.KeyGenBitSize)
+			return nil, nil, fmt.Errorf("Invalid keygenbitsize for ecdsa: %d", conf.KeyGenBitSize)
 		}
 		if err != nil {
 			return nil, nil, fmt.Errorf("Unable to generate ecdsa private key: %v", err)
