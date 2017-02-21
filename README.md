@@ -140,7 +140,7 @@ For testing purposes, `~/.jinx/jinx.yaml` can be used as well, but if `/etc/jinx
 
 **Test Service**
 
-By this point, you should have a working instance of CURSE, and you generate a certificate by running `jinx`, then inspecting the certificate file, which will be created in the folder with your pubkey, by running (substitute the proper filename based on the name of your pubkey)`ssh-keygen -Lf ~/.ssh/id_ed25519-cert.pub`
+By this point, you should have a working instance of CURSE, and you can generate a certificate by running `jinx`, then inspect the certificate file, which will be created in the folder with your pubkey by running `ssh-keygen -Lf ~/.ssh/id_ed25519-cert.pub` (substitute the proper filename based on the name of your pubkey)
 
 **Configuring Remote Hosts**
 
