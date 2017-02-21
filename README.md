@@ -26,7 +26,7 @@ First, ensure you have a working Go environment (prebuilt packages will be avail
 
 Add a curse service user (as root):
 
-    $ sudo useradd -r -m -d "/etc/curse" -s /usr/sbin/nologin curse
+    $ sudo useradd -r -m -d "/opt/curse" -s /usr/sbin/nologin curse
 
 `go get` the daemon and client:
 
