@@ -98,7 +98,7 @@ func init() {
 	}
 
 	viper.SetDefault("addr", "127.0.0.1")
-	viper.SetDefault("cakeyfile", "")
+	viper.SetDefault("cakeyfile", "/opt/curse/etc/user_ca")
 	viper.SetDefault("dbfile", "/opt/curse/etc/cursed.db")
 	viper.SetDefault("duration", 2*60)
 	viper.SetDefault("extensions", []string{"permit-pty"})
