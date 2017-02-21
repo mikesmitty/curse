@@ -81,8 +81,8 @@ Copy the example cursed config file and edit it. The following fields are requir
 * cakeyfile (SSH CA key file: `/opt/curse/etc/user_ca` in this example)
 * proxyuser (used to authenticate the proxy to the curse daemon)
 * proxypass
-* sslcert (SSL key file location: `/opt/curse/etc/server.key` in this example)
-* sslkey (SSL cert file location: `/opt/curse/etc/server.crt` in this example)
+* sslcert (SSL key file location: `/opt/curse/etc/server.crt` in this example)
+* sslkey (SSL cert file location: `/opt/curse/etc/server.key` in this example)
 
 The curse daemon's port can be changed, but should be kept to a privileged port (below 1024) for security reasons.
 
