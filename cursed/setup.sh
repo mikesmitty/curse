@@ -69,6 +69,8 @@ if  [ "$PKG_CONFIG" != "" ]; then
     SETCAP=$(which setcap)
     sed "s|SETCAP|$SETCAP|" "$CURSE_ROOT/etc/cursed.service" >"$PKG_CONFIG/cursed.service"
     systemctl daemon-reload
+    systemctl enable cursed.service
+    systemctl start cursed.service
 else
     echo "Systemd unit file directory not found, you will need to install and configure cusred.service manually, or create a startup script for cursed"
 fi
