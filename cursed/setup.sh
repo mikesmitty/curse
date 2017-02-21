@@ -11,7 +11,7 @@ CURSE_ALGO="ed25519"
 
 # Create curse system user account
 NOLOGIN=$(which nologin)
-useradd -r -m -d "$CURSE_ROOT" -s $NOLOGIN curse
+getent passwd curse >/dev/null || useradd -r -m -d "$CURSE_ROOT" -s $NOLOGIN curse
 chmod 700 "$CURSE_ROOT"
 chown curse. "$CURSE_ROOT"
 
@@ -21,11 +21,10 @@ if [ ! -e "$CURSE_ROOT/etc/user_ca" ] && [ ! -e "$CURSE_ROOT/etc/user_ca.pub" ];
     ssh-keygen -q -N "" -t "$CURSE_ALGO" -f "$CURSE_ROOT/etc/user_ca"
     chmod 600 "$CURSE_ROOT/etc/user_ca"
     chmod 644 "$CURSE_ROOT/etc/user_ca.pub"
+    echo -e "$CURSE_ALGO SSH CA keypair generated. Here is the CA PubKey for adding to your servers:\n`cat \"$CURSE_ROOT/etc/user_ca.pub\"`\nThis key can also be found at $CURSE_ROOT/etc/user_ca.pub"
 else
     echo "SSH CA keypair already exists. Skipping generation."
 fi
-
-echo -e "$CURSE_ALGO SSH CA keypair generated. Here is the CA PubKey for adding to your servers:\n$(cat \"$CURSE_ROOT/etc/user_ca.pub\")\nThis key can also be found at $CURSE_ROOT/etc/user_ca.pub"
 
 # Generate SSL key and certificate
 if [ ! -e "$CURSE_ROOT/etc/server.key" ] && [ ! -e "$CURSE_ROOT/etc/server.crt" ]; then
@@ -42,15 +41,15 @@ fi
 # Generate credentials for configuration files
 if [ ! -e "$CURSE_ROOT/etc/curse.yaml" ]; then
     echo "Generating proxy credentials..."
-    PROXY_USER=$(openssl rand -base64 24)
-    PROXY_PASS=$(openssl rand -base64 24)
+    PROXY_USER=$(openssl rand -base64 12)
+    PROXY_PASS=$(openssl rand -base64 12)
     AUTH_STRING=$(echo -n "$PROXY_USER:$PROXY_PASS" | base64)
 
-    sed -e "s|PROXYUSER_GOES_HERE|$PROXY_USER|" -e "s|PROXYUSER_GOES_HERE|$PROXY_USER|" "$CURSE_ROOT/etc/cursed.yaml-example" > "$CURSE_ROOT/etc/cursed.yaml"
+    sed -e "s|PROXYUSER_GOES_HERE|$PROXY_USER|" -e "s|PROXYUSER_GOES_HERE|$PROXY_USER|" "$CURSE_ROOT/etc/cursed.yaml-example" >"$CURSE_ROOT/etc/cursed.yaml"
     chmod 600 "$CURSE_ROOT/etc/cursed.yaml"
     chown curse. "$CURSE_ROOT/etc/cursed.yaml"
 
-    sed -e "s|BASICAUTHSTRINGHERE|$AUTH_STRING|" "$CURSE_ROOT/etc/cursed.conf-example.nginx" > "$CURSE_ROOT/etc/cursed.conf-nginx"
+    sed "s|BASICAUTHSTRINGHERE|$AUTH_STRING|" "$CURSE_ROOT/etc/cursed.conf-example.nginx" >"$CURSE_ROOT/etc/cursed.conf-nginx"
     chmod 600 "$CURSE_ROOT/etc/cursed.conf-nginx"
     chown root. "$CURSE_ROOT/etc/cursed.conf-nginx"
 
@@ -68,7 +67,7 @@ PKG_CONFIG=$(pkg-config systemd --variable=systemdsystemunitdir)
 if  [ "$PKG_CONFIG" != "" ]; then
     echo "Installing cursed systemd service..."
     SETCAP=$(which setcap)
-    sed "s|SETCAP|$SETCAP|" "$CURSE_ROOT/etc/cursed.service" "$PKG_CONFIG/cursed.service"
+    sed "s|SETCAP|$SETCAP|" "$CURSE_ROOT/etc/cursed.service" >"$PKG_CONFIG/cursed.service"
     systemctl daemon-reload
 else
     echo "Systemd unit file directory not found, you will need to install and configure cusred.service manually, or create a startup script for cursed"
