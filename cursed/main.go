@@ -87,8 +87,8 @@ func init() {
 	//}
 
 	viper.SetConfigName("cursed") // name of config file (without extension)
+	viper.AddConfigPath("/opt/curse/etc/")
 	viper.AddConfigPath("/etc/curse/")
-	viper.AddConfigPath("$HOME/etc/")
 	viper.AddConfigPath(".")
 	viper.ReadInConfig()
 
@@ -99,7 +99,7 @@ func init() {
 
 	viper.SetDefault("addr", "127.0.0.1")
 	viper.SetDefault("cakeyfile", "")
-	viper.SetDefault("dbfile", "$HOME/etc/cursed.db")
+	viper.SetDefault("dbfile", "/opt/curse/etc/cursed.db")
 	viper.SetDefault("duration", 2*60)
 	viper.SetDefault("extensions", []string{"permit-pty"})
 	viper.SetDefault("forcecmd", false)
