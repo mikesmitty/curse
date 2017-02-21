@@ -74,3 +74,6 @@ if  [ "$PKG_CONFIG" != "" ]; then
 else
     echo "Systemd unit file directory not found, you will need to install and configure cusred.service manually, or create a startup script for cursed"
 fi
+
+# This will allow us to run on a privileged port without root privileges
+/usr/sbin/setcap 'cap_net_bind_service=+ep' /opt/curse/sbin/cursed
