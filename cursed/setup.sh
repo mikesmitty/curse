@@ -21,7 +21,7 @@ if [ ! -e "$CURSE_ROOT/etc/user_ca" ] && [ ! -e "$CURSE_ROOT/etc/user_ca.pub" ];
     ssh-keygen -q -N "" -t "$CURSE_ALGO" -f "$CURSE_ROOT/etc/user_ca"
     chmod 600 "$CURSE_ROOT/etc/user_ca"
     chmod 644 "$CURSE_ROOT/etc/user_ca.pub"
-    echo -e "$CURSE_ALGO SSH CA keypair generated. Here is the CA PubKey for adding to your servers:\n`cat \"$CURSE_ROOT/etc/user_ca.pub\"`\nThis key can also be found at $CURSE_ROOT/etc/user_ca.pub"
+    echo -e "$CURSE_ALGO SSH CA keypair generated. Here is the CA PubKey for adding to your servers:\n\n`cat \"$CURSE_ROOT/etc/user_ca.pub\"`\n\nThis key can also be found at $CURSE_ROOT/etc/user_ca.pub"
 else
     echo "SSH CA keypair already exists. Skipping generation."
 fi
