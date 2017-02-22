@@ -42,7 +42,7 @@ Install/configure your SSL certificates authentication settings for the reverse 
 
 Once your authentication is configured and certificates in place, restart nginx:
 
-    $ systemctl restart nginx
+    $ sudo systemctl restart nginx
 
 Copy the jinx config template into place and update the `url` setting to match your SSL certificate FQDN:
 
