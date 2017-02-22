@@ -32,6 +32,7 @@ First, install nginx:
     $ sudo yum install curse jinx
 
 After install setup (generates keys and proxy config):
+Please note the -a flag in the cp command, the permissions on this config file must be 600 to prevent open access to the curse daemon.
 
     $ sudo bash /opt/curse/sbin/setup.sh
     $ sudo cp -a /opt/curse/etc/cursed.conf-nginx /etc/nginx/conf.d/cursed.conf
