@@ -31,7 +31,7 @@ First, install nginx:
     $ sudo curl -s https://mirror.go-repo.io/curse/centos/curse-repo.repo | tee /etc/yum.repos.d/curse-repo.repo
     $ sudo yum install curse jinx
 
-After install setup (generates keys and proxy config):
+After install setup (generates keys and proxy config):  
 Please note the -a flag in the cp command, the permissions on this config file must be 600 to prevent open access to the curse daemon.
 
     $ sudo bash /opt/curse/sbin/setup.sh
