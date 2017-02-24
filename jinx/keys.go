@@ -101,7 +101,7 @@ func genKeyPair(conf *config) ([]byte, []byte, error) {
 		// Convert to a writable format
 		ecBytes, err := x509.MarshalECPrivateKey(privateKey)
 		if err != nil {
-			return nil, nil, fmt.Errorf("Unable to convert rsa private key format: %v", err)
+			return nil, nil, fmt.Errorf("Unable to convert ecdsa private key format: %v", err)
 		}
 		pemKey := &pem.Block{
 			Type:  "EC PARAMETERS",
@@ -113,7 +113,7 @@ func genKeyPair(conf *config) ([]byte, []byte, error) {
 		// Generate our private and public keys
 		privateKey, err := rsa.GenerateKey(rand.Reader, conf.KeyGenBitSize)
 		if err != nil {
-			return nil, nil, fmt.Errorf("Unable to generate RSA private key: %v", err)
+			return nil, nil, fmt.Errorf("Unable to generate rsa private key: %v", err)
 		}
 		pubKey := privateKey.Public()
 		publicKey, err := ssh.NewPublicKey(&pubKey)
