@@ -28,10 +28,8 @@
 ## Set to -1 to disable key cycling
 #maxkeyage: 90
 
-## Credentials for the proxy to authenticate against cursed
-#proxyuser: PROXYUSER_GOES_HERE
-#proxypass: PROXYPASS_GOES_HERE
-
 ## SSL key and cert for cursed service
+## For simplicity's sake we're using the server's cert as the CA, but you can use a proper CA setup as well
+#sslca: /opt/curse/etc/server.crt
 #sslcert: /opt/curse/etc/server.crt
 #sslkey: /opt/curse/etc/server.key
