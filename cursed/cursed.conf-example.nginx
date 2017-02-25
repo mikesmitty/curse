@@ -13,7 +13,7 @@ server {
       root                 /usr/share/nginx/html;
       index                index.html index.htm;
 
-      # Comment these fields if using not htpasswd-style authentication (and update with your own auth settings)
+      # Comment these fields if not using htpasswd-style authentication (and update with your own auth settings)
       auth_basic           "Restricted";
       auth_basic_user_file /etc/nginx/htpasswd;
 
