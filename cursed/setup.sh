@@ -20,14 +20,20 @@ if [ ! -e "$CURSE_ROOT/etc/user_ca" ] && [ ! -e "$CURSE_ROOT/etc/user_ca.pub" ];
     ssh-keygen -q -N "" -t "$CURSE_ALGO" -f "$CURSE_ROOT/etc/user_ca"
     chmod 600 "$CURSE_ROOT/etc/user_ca"
     chmod 644 "$CURSE_ROOT/etc/user_ca.pub"
-    echo -e "$CURSE_ALGO SSH CA keypair generated. Here is the CA PubKey for adding to your servers:\n\n`cat \"$CURSE_ROOT/etc/user_ca.pub\"`\n\nThis key can also be found at $CURSE_ROOT/etc/user_ca.pub"
+    echo "$CURSE_ALGO SSH CA keypair generated. Here is the CA PubKey for adding to your servers:"
+    echo
+    cat "$CURSE_ROOT/etc/user_ca.pub"
+    echo
+    echo
+    echo "This key can also be found at $CURSE_ROOT/etc/user_ca.pub"
 else
     echo "SSH CA keypair already exists. Skipping generation."
 fi
 
 # Generate SSL key and certificate
 if [ ! -e "$CURSE_ROOT/etc/server.key" ] || [ ! -e "$CURSE_ROOT/etc/server.crt" ]; then
-    echo -e "\nGenerating SSL certificates..."
+    echo
+    echo "Generating SSL certificates..."
     openssl ecparam -genkey -name secp384r1 -out "$CURSE_ROOT/etc/server.key"
     openssl req -new -x509 -sha256 -key "$CURSE_ROOT/etc/server.key" -out "$CURSE_ROOT/etc/server.crt" -days 730 \
         -subj "/C=US/ST=State/L=Location/O=CURSE/CN=localhost"
@@ -39,7 +45,8 @@ fi
 
 # Generate SSL client key/certs for proxy authentication
 if [ ! -e "$CURSE_ROOT/etc/cursed-client.key" ]; then
-    echo -e "\nGenerating client cert for proxy..."
+    echo
+    echo "Generating client cert for proxy..."
     openssl ecparam -genkey -name secp384r1 -out "$CURSE_ROOT/etc/cursed-client.key"
     openssl req -new -key "$CURSE_ROOT/etc/cursed-client.key" -out "$CURSE_ROOT/etc/cursed-client.csr" -subj "/C=US/ST=State/L=Location/O=NGINX/CN=localhost"
     openssl x509 -req -sha256 -in "$CURSE_ROOT/etc/cursed-client.csr" -CA "$CURSE_ROOT/etc/server.crt"  -days 730 \
@@ -57,7 +64,10 @@ if [ ! -e "$CURSE_ROOT/etc/cursed-client.key" ]; then
     echo
     echo "cp -a $CURSE_ROOT/etc/cursed-client.{key,crt} $CURSE_ROOT/etc/cursed-ca_cert.crt /etc/nginx/"
     echo
-    echo "If using nginx, please move $CURSE_ROOT/etc/cursed.conf-nginx to /etc/nginx/conf.d/cursed.conf or manually include it in your nginx.conf file after adding your desired configuration settings."
+    echo "If using nginx, copy $CURSE_ROOT/etc/cursed.conf-nginx to /etc/nginx/conf.d/cursed.conf or manually include it in your nginx.conf file, after adding your desired configuration settings."
+    echo
+    echo "cp -a $CURSE_ROOT/etc/cursed.conf-nginx /etc/nginx/conf.d/cursed.conf"
+    echo
 else
     echo "$CURSE_ROOT/etc/cursed.yaml already exists. Leaving existing config file, but please review $CURSE_ROOT/etc/cursed.yaml-example for any new configuration settings."
 fi
@@ -72,7 +82,10 @@ if [ ! -e "$CURSE_ROOT/etc/cursed.yaml" ]; then
     chmod 600 "$CURSE_ROOT/etc/cursed.conf-nginx"
 # END DELETEME
 
-    echo -e "\nGenerated config files for cursed and nginx:\n$CURSED_ROOT/etc/cursed.yaml\n$CURSED_ROOT/etc/cursed-nginx.conf"
+    echo
+    echo "Generated config files for cursed and nginx:"
+    echo "$CURSED_ROOT/etc/cursed.yaml"
+    echo "$CURSED_ROOT/etc/cursed-nginx.conf"
     echo "If using nginx, please move $CURSE_ROOT/etc/cursed.conf-nginx to /etc/nginx/conf.d/ or manually include it in your nginx.conf file after adding your desired configuration settings."
 else
     echo "$CURSE_ROOT/etc/cursed.yaml already exists. Leaving existing config file, but please review $CURSE_ROOT/etc/cursed.yaml-example for any new configuration settings."
@@ -91,7 +104,8 @@ chown root. "$CURSE_ROOT/etc/cursed.conf-nginx"
 # Install systemd service
 PKG_CONFIG=$(pkg-config systemd --variable=systemdsystemunitdir)
 if  [ "$PKG_CONFIG" != "" ]; then
-    echo -e "\nInstalling cursed systemd service...\n"
+    echo
+    echo "Installing cursed systemd service..."
     SETCAP=$(which setcap)
     sed "s|SETCAP|$SETCAP|" "$CURSE_ROOT/etc/cursed.service" >"$PKG_CONFIG/cursed.service"
     systemctl daemon-reload
