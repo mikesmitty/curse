@@ -46,16 +46,16 @@ if [ ! -e "$CURSE_ROOT/etc/cursed-client.key" ]; then
         -CAkey "$CURSE_ROOT/etc/server.key" -set_serial 01 -out "$CURSE_ROOT/etc/cursed-client.crt"
     cp -fv "$CURSE_ROOT/etc/server.crt" "$CURSE_ROOT/etc/cursed-ca_cert.crt"
 
-    rm -fv "$CURSE_ROOT/etc/curse-client.csr"
+    rm -fv "$CURSE_ROOT/etc/cursed-client.csr"
 
-    chmod 600 "$CURSE_ROOT/etc/curse-client.key"
-    chmod 644 "$CURSE_ROOT/etc/curse-client.crt"
-    chmod 644 "$CURSE_ROOT/etc/curse-ca_cert.crt"
+    chmod 600 "$CURSE_ROOT/etc/cursed-client.key"
+    chmod 644 "$CURSE_ROOT/etc/cursed-client.crt"
+    chmod 644 "$CURSE_ROOT/etc/cursed-ca_cert.crt"
 
     echo "Generated client certificates for cursed and nginx. Please copy them to /etc/nginx/ or your preferred HTTP server's config directory:"
-    ls -l $CURSE_ROOT/etc/curse-client.{key,crt} $CURSE_ROOT/etc/curse-ca_cert.crt
+    ls -l $CURSE_ROOT/etc/cursed-client.{key,crt} $CURSE_ROOT/etc/cursed-ca_cert.crt
     echo
-    echo "cp -a $CURSE_ROOT/etc/curse-client.{key,crt} $CURSE_ROOT/etc/curse-ca_cert.crt /etc/nginx/"
+    echo "cp -a $CURSE_ROOT/etc/cursed-client.{key,crt} $CURSE_ROOT/etc/cursed-ca_cert.crt /etc/nginx/"
     echo
     echo "If using nginx, please move $CURSE_ROOT/etc/cursed.conf-nginx to /etc/nginx/conf.d/ or manually include it in your nginx.conf file after adding your desired configuration settings."
 else
@@ -80,9 +80,9 @@ fi
 
 # Fix curse directory permissions
 chown -R curse. "$CURSE_ROOT"
-chown root. "$CURSE_ROOT/etc/curse-client.key"
-chown root. "$CURSE_ROOT/etc/curse-client.crt"
-chown root. "$CURSE_ROOT/etc/curse-ca_cert.crt"
+chown root. "$CURSE_ROOT/etc/cursed-client.key"
+chown root. "$CURSE_ROOT/etc/cursed-client.crt"
+chown root. "$CURSE_ROOT/etc/cursed-ca_cert.crt"
 chown root. "$CURSE_ROOT/etc/cursed.conf-nginx"
 
 # This will allow us to run on a privileged port without root privileges
