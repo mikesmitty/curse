@@ -30,11 +30,10 @@ type config struct {
 	ForceCmd        bool
 	MaxKeyAge       int
 	Port            int
-	ProxyUser       string
-	ProxyPass       string
 	RequireClientIP bool
-	SSLKey          string
+	SSLCA           string
 	SSLCert         string
+	SSLKey          string
 	UserHeader      string
 }
 
@@ -72,10 +71,21 @@ func main() {
 		webHandler(w, r, conf)
 	})
 
-	// Start our listener service
+	// Prepare our TLS settings
 	addrPort := fmt.Sprintf("%s:%d", conf.Addr, conf.Port)
+	tlsConf, err := getTLSConfig(conf)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer conf.db.Close()
+	server := &http.Server{
+		Addr:      addrPort,
+		TLSConfig: tlsConf,
+	}
+
+	// Start our listener service
 	log.Printf("Starting HTTPS server on %s", addrPort)
-	err = http.ListenAndServeTLS(addrPort, conf.SSLCert, conf.SSLKey, nil)
+	err = server.ListenAndServeTLS(conf.SSLCert, conf.SSLKey)
 	if err != nil {
 		log.Fatalf("Listener service: %v", err)
 	}
@@ -105,11 +115,10 @@ func init() {
 	viper.SetDefault("forcecmd", false)
 	viper.SetDefault("maxkeyage", 90)
 	viper.SetDefault("port", 81)
-	viper.SetDefault("proxyuser", "")
-	viper.SetDefault("proxypass", "")
 	viper.SetDefault("requireclientip", true)
-	viper.SetDefault("sslkey", "/opt/curse/etc/server.key")
+	viper.SetDefault("sslca", "/opt/curse/etc/server.crt")
 	viper.SetDefault("sslcert", "/opt/curse/etc/server.crt")
+	viper.SetDefault("sslkey", "/opt/curse/etc/server.key")
 	viper.SetDefault("userheader", "REMOTE_USER")
 }
 
@@ -150,12 +159,9 @@ func getConf() (*config, error) {
 	// Hardcoding the DB bucket name
 	conf.bucketName = []byte("pubkeybirthdays")
 
-	// Require proxy authentication and SSL for security
-	if conf.ProxyUser == "" || conf.ProxyPass == "" {
-		return nil, fmt.Errorf("proxyuser and proxypass are required fields")
-	}
-	if conf.SSLKey == "" || conf.SSLCert == "" {
-		return nil, fmt.Errorf("sslkey and sslcert are required fields")
+	// Require TLS mutual authentication for security
+	if conf.SSLCA == "" || conf.SSLKey == "" || conf.SSLCert == "" {
+		return nil, fmt.Errorf("sslca, sslkey, and sslcert are required fields")
 	}
 
 	// Expand $HOME into service user's home path

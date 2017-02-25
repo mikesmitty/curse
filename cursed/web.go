@@ -19,18 +19,6 @@ type httpParams struct {
 }
 
 func webHandler(w http.ResponseWriter, r *http.Request, conf *config) {
-	// Do basic auth with the reverse proxy to prevent side-stepping it
-	user, pass, ok := r.BasicAuth()
-	if !ok {
-		http.Error(w, "Authorization Failure", http.StatusUnauthorized)
-		return
-	}
-	if user != conf.ProxyUser || pass != conf.ProxyPass {
-		log.Printf("Invalid proxy credentials")
-		http.Error(w, "Unauthorized", http.StatusUnauthorized)
-		return
-	}
-
 	// Load our form parameters into a struct
 	p := httpParams{
 		bastionIP:   r.PostFormValue("bastionIP"),
