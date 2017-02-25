@@ -14,7 +14,7 @@
 ## Bit length of SSH keys to use during auto-generation (ssh-keygen -t <type> -b ____ )
 ## Valid only with keygentype: rsa or ecdsa
 ## Valid ecdsa values: 256, 384, 521
-#keygenlength: 2048
+#keygenbitsize: 2048
 
 ## Filename of the SSH private key to be generated if autogenkeys is enabled,
 ## with matching public key file

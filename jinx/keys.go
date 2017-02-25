@@ -92,8 +92,11 @@ func genKeyPair(conf *config) ([]byte, []byte, error) {
 		if err != nil {
 			return nil, nil, fmt.Errorf("Unable to generate ecdsa private key: %v", err)
 		}
-		pubKey := privateKey.Public()
-		publicKey, err := ssh.NewPublicKey(&pubKey)
+		pubKey, ok := privateKey.Public().(*ecdsa.PublicKey)
+		if !ok {
+			return nil, nil, fmt.Errorf("ecdsa.PublicKey type assertion failed on an ecdsa public key. This should never ever happen.")
+		}
+		publicKey, err := ssh.NewPublicKey(pubKey)
 		if err != nil {
 			return nil, nil, fmt.Errorf("Unable to convert ecdsa pubkey format: %v", err)
 		}
@@ -115,8 +118,11 @@ func genKeyPair(conf *config) ([]byte, []byte, error) {
 		if err != nil {
 			return nil, nil, fmt.Errorf("Unable to generate rsa private key: %v", err)
 		}
-		pubKey := privateKey.Public()
-		publicKey, err := ssh.NewPublicKey(&pubKey)
+		pubKey, ok := privateKey.Public().(*rsa.PublicKey)
+		if !ok {
+			return nil, nil, fmt.Errorf("rsa.PublicKey type assertion failed on an rsa public key. This should never ever happen.")
+		}
+		publicKey, err := ssh.NewPublicKey(pubKey)
 		if err != nil {
 			return nil, nil, fmt.Errorf("Unable to convert rsa pubkey format: %v", err)
 		}
