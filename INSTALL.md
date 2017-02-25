@@ -1,5 +1,8 @@
-Manual Install
--------
+Manual Install (OUT OF DATE)
+--------------
+These instructions largely apply to CURSE version 0.7  
+They will be updated at a later date.
+
 These instructions assume the bastion host is hosting the curse daemon. Adjust instructions as necessary if hosting cursed on another server, but for security reasons the reverse proxy and cursed service should always be hosted on the same server unless you have valid SSL certificates for both the reverse proxy and CURSE daemon, and have the `proxy_ssl_verify` setting enabled in nginx.
 
 **CURSE Daemon Installation**
