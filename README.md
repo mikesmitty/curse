@@ -24,8 +24,8 @@ These instructions assume the bastion host is hosting the curse daemon. Adjust i
 
 **NOTICE**: If upgrading from CURSE 0.7 you will need to do some manual cleanup after installing the rpm.  
 Versions 0.8+ use TLS mutual authentication between the reverse proxy and the curse daemon, and no longer support basic auth which was used in 0.7.
-* Remove the old curse daemon SSL certificate/key: `mv /opt/curse/etc/server.key{,.old}; mv /opt/curse/etc/server.crt{,.old}`
-* After installing the new curse rpm, run `/opt/curse/sbin/setup.sh` again to generate the mutual auth certificates
+* After installing the new curse rpm, remove the old curse daemon SSL certificate/key: `mv /opt/curse/etc/server.key{,.old}` `mv /opt/curse/etc/server.crt{,.old}`
+* Run `/opt/curse/sbin/setup.sh` again to generate the mutual auth certificates (if you have not yet removed the old server.key and server.crt, this will not work properly)
 * Import your nginx customizations to (and update `server_name` field in) the new template file: `/opt/curse/etc/cursed.conf-nginx` and copy it to `/etc/nginx/conf.d/`
 * Reload nginx to use the new config
 
