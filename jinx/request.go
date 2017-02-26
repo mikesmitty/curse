@@ -15,6 +15,7 @@ func requestCert(conf *config, user, pass, pubKey string) ([]byte, int, error) {
 	relatively insusceptible to MITM. Also, the digest auth client libraries I've seen are kinda bad.
 	I plan to come back and try writing a digest library once I get the prototype functional (and not in
 	a time crunch to make a demo). */
+	// Looks like support for auth_digest is somewhat lacking in nginx. This will have to wait a while longer.
 	tr := &http.Transport{
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: conf.Insecure},
 	}
