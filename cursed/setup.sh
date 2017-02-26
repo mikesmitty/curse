@@ -15,7 +15,7 @@ chmod 700 "$CURSE_ROOT"
 chown curse. "$CURSE_ROOT"
 
 # Generate SSH CA keypair
-if [ ! -e "$CURSE_ROOT/etc/user_ca" ] && [ ! -e "$CURSE_ROOT/etc/user_ca.pub" ]; then
+if [ ! -e "$CURSE_ROOT/etc/user_ca" ] || [ ! -e "$CURSE_ROOT/etc/user_ca.pub" ]; then
     echo "Generating $CURSE_ALGO SSH CA certificates..."
     ssh-keygen -q -N "" -t "$CURSE_ALGO" -f "$CURSE_ROOT/etc/user_ca"
     chmod 600 "$CURSE_ROOT/etc/user_ca"
@@ -68,8 +68,6 @@ if [ ! -e "$CURSE_ROOT/etc/cursed-client.key" ]; then
     echo
     echo "cp -a $CURSE_ROOT/etc/cursed.conf-nginx /etc/nginx/conf.d/cursed.conf"
     echo
-else
-    echo "$CURSE_ROOT/etc/cursed.yaml already exists. Leaving existing config file, but please review $CURSE_ROOT/etc/cursed.yaml-example for any new configuration settings."
 fi
 
 # Generate credentials for configuration files
