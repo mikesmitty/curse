@@ -20,7 +20,14 @@ Install
 -------
 These instructions assume the bastion host is hosting the curse daemon. Adjust instructions as necessary if hosting cursed on another server, but for security reasons the reverse proxy and cursed service should always be hosted on the same server unless you have valid SSL certificates for both the reverse proxy and CURSE daemon, and have the `proxy_ssl_verify` setting enabled in nginx.
 
-**CentOS 7**
+###CentOS 7
+
+**NOTICE**: If upgrading from CURSE 0.7 you will need to do some manual cleanup after installing the rpm.  
+Versions 0.8+ use TLS mutual authentication between the reverse proxy and the curse daemon, and no longer support basic auth which was used in 0.7.
+* Remove the old curse daemon SSL certificate/key: `mv /opt/curse/etc/server.key{,.old}; mv /opt/curse/etc/server.crt{,.old}`
+* After installing the new curse rpm, run `/opt/curse/sbin/setup.sh` again to generate the mutual auth certificates
+* Import your nginx customizations to the new template file: `/opt/curse/etc/cursed.conf-nginx` and copy it to `/etc/nginx/conf.d/`
+* Reload nginx to use the new config
 
 First, install nginx:
 

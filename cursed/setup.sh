@@ -78,10 +78,6 @@ if [ ! -e "$CURSE_ROOT/etc/cursed.yaml" ]; then
     chmod 600 "$CURSE_ROOT/etc/cursed.yaml"
     chown curse. "$CURSE_ROOT/etc/cursed.yaml"
 
-    cp -n "$CURSE_ROOT/etc/cursed.conf-example.nginx" "$CURSE_ROOT/etc/cursed.conf-nginx"
-    chmod 600 "$CURSE_ROOT/etc/cursed.conf-nginx"
-# END DELETEME
-
     echo
     echo "Generated config files for cursed and nginx:"
     echo "$CURSED_ROOT/etc/cursed.yaml"
