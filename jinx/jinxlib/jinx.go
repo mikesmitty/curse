@@ -19,6 +19,11 @@ func Jinx(args []string) {
 		os.Exit(1)
 	}
 
+	// Use our first argument as our command
+	if len(args) > 0 {
+		conf.cmd = args[0]
+	}
+
 	// Get our pubkey
 	pubKey, err := getPubKey(conf)
 	if err != nil {

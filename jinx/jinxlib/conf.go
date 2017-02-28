@@ -11,6 +11,7 @@ import (
 
 type config struct {
 	certFile    string
+	cmd         string
 	privKeyFile string
 	pubKeyFile  string
 	userIP      string

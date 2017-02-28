@@ -27,6 +27,7 @@ func requestCert(conf *config, user, pass, pubKey string) ([]byte, int, error) {
 	// Assemble our POST form values
 	form := url.Values{}
 	form.Add("bastionIP", conf.BastionIP)
+	form.Add("cmd", conf.cmd)
 	form.Add("key", pubKey)
 	form.Add("remoteUser", conf.SSHUser)
 	form.Add("userIP", conf.userIP)
