@@ -1,4 +1,4 @@
-# CURSE: Certificate Utilization for Robust SSH Ephemerality
+# CURSE
 
 CURSE is an SSH certificate signing server, built as an alternative to Netflix's BLESS tool, but without a dependency on AWS.
 
