@@ -78,6 +78,7 @@ func initConfig() {
 	viper.SetDefault("keygenbitsize", 2048)
 	viper.SetDefault("keygenpubkey", "$HOME/.ssh/id_jinx.pub")
 	viper.SetDefault("keygentype", "ed25519")
+	viper.SetDefault("mutualauth", false)
 	viper.SetDefault("pubkey", "$HOME/.ssh/id_ed25519.pub")
 	viper.SetDefault("sshuser", "root") // FIXME Need to revisit this?
 	viper.SetDefault("sslcafile", "/etc/jinx/ca.crt")
