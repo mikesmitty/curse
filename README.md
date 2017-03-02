@@ -59,7 +59,7 @@ Copy the jinx config template into place and update the `url` setting to match y
 
 If all went well you should now be able to request certificates:
 
-    $ jinx 'echo test'
+    $ jinx echo test
     $ ssh-keygen -Lf ~/.ssh/id_jinx-cert.pub
 
 Now, all that is left is to add the CA public key on the servers you want to connect to:

@@ -21,7 +21,7 @@ func Jinx(args []string) {
 
 	// Use our first argument as our command
 	if len(args) > 0 {
-		conf.cmd = args[0]
+		conf.cmd = strings.Join(args, " ")
 	}
 
 	// Get our pubkey
