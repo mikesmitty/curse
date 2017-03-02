@@ -31,32 +31,36 @@ func Jinx(args []string) {
 		os.Exit(1)
 	}
 
-	// Nag-mode for inadvertent/malicious insecure setting
-	if conf.Insecure {
-		fmt.Println("Warning, your password is about to be sent insecurely. ctrl+c to quit")
-	}
+	// Disable password prompt when using TLS mutual auth
+	// Also disabling insecure nag-mode since the CA may not necessarily be trusted by the system
+	if !conf.MutualAuth {
+		// Nag-mode for inadvertent/malicious insecure setting
+		if conf.Insecure {
+			fmt.Println("Warning, your password is about to be sent insecurely. ctrl+c to quit")
+		}
 
-	// Read in our username and password
-	reader := bufio.NewReader(os.Stdin)
-	fmt.Printf("Username: ")
-	user, err := reader.ReadString('\n')
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Input error: %v\n", err)
-		os.Exit(1)
-	}
-	user = strings.TrimSpace(user)
+		// Read in our username and password
+		reader := bufio.NewReader(os.Stdin)
+		fmt.Printf("Username: ")
+		user, err := reader.ReadString('\n')
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Input error: %v\n", err)
+			os.Exit(1)
+		}
+		conf.userName = strings.TrimSpace(user)
 
-	pass, err := speakeasy.Ask("Password: ")
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Shell error: %v\n", err)
-		os.Exit(1)
+		conf.userPass, err = speakeasy.Ask("Password: ")
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Shell error: %v\n", err)
+			os.Exit(1)
+		}
 	}
 
 	// Send our pubkey to be signed
-	respBody, statusCode, err := requestCert(conf, user, pass, string(pubKey))
+	respBody, statusCode, err := requestCert(conf, string(pubKey))
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
-		os.Exit(1)
+		os.Exit(statusCode)
 	}
 
 	switch statusCode {

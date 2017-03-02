@@ -67,7 +67,7 @@ func initConfig() {
 
 	// If a config file is found, read it in.
 	if err := viper.ReadInConfig(); err == nil {
-		fmt.Println("Using config file:", viper.ConfigFileUsed())
+		//fmt.Println("Using config file:", viper.ConfigFileUsed())
 	}
 
 	viper.SetDefault("autogenkeys", true)
@@ -78,6 +78,9 @@ func initConfig() {
 	viper.SetDefault("keygentype", "ed25519")
 	viper.SetDefault("pubkey", "$HOME/.ssh/id_ed25519.pub")
 	viper.SetDefault("sshuser", "root") // FIXME Need to revisit this?
+	viper.SetDefault("sslcafile", "/etc/jinx/ca.crt")
+	viper.SetDefault("sslcertfile", "$HOME/.jinx/client.crt")
+	viper.SetDefault("sslkeyfile", "$HOME/.jinx/client.key")
 	viper.SetDefault("timeout", 30)
 	viper.SetDefault("url", "https://localhost/")
 }
