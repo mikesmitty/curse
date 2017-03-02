@@ -15,6 +15,8 @@ type config struct {
 	privKeyFile string
 	pubKeyFile  string
 	userIP      string
+	userName    string
+	userPass    string
 
 	AutoGenKeys   bool
 	BastionIP     string
@@ -22,8 +24,12 @@ type config struct {
 	KeyGenBitSize int
 	KeyGenPubKey  string
 	KeyGenType    string
+	MutualAuth    bool
 	PubKey        string
 	SSHUser       string
+	SSLCAFile     string
+	SSLCertFile   string
+	SSLKeyFile    string
 	Timeout       int
 	URL           string
 }
@@ -50,6 +56,9 @@ func getConf() (*config, error) {
 	// Replace $HOME with the current user's home directory
 	conf.PubKey = expandHome(conf.PubKey)
 	conf.KeyGenPubKey = expandHome(conf.KeyGenPubKey)
+	conf.SSLCAFile = expandHome(conf.SSLCAFile)
+	conf.SSLCertFile = expandHome(conf.SSLCertFile)
+	conf.SSLKeyFile = expandHome(conf.SSLKeyFile)
 
 	// Generate our key and certificate filepaths
 	r := regexp.MustCompile(`\.pub$`)

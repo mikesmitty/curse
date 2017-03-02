@@ -102,7 +102,7 @@ func validateHTTPParams(p httpParams, conf *config) error {
 	if p.bastionUser == "" {
 		err := fmt.Errorf("%s missing from request", conf.UserHeader)
 		return err
-	} else if len(p.bastionUser) > 32 || !conf.userRegex.MatchString(p.bastionUser) {
+	} else if !conf.userRegex.MatchString(p.bastionUser) {
 		err := fmt.Errorf("username is invalid")
 		return err
 	}

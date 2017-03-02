@@ -178,7 +178,8 @@ func getConf() (*config, error) {
 
 	// Compile our user-matching regex (usernames are limited to 32 characters, must start
 	// with a-z or _, and contain only these characters: a-z, 0-9, - and _
-	conf.userRegex = regexp.MustCompile(`(?i)^[a-z_][a-z0-9_-]{0,31}$`)
+	// With TLS mutual auth, the certificate fingerprint is used in place of a username ($ssl_client_fingerprint in nginx)
+	conf.userRegex = regexp.MustCompile(`(?i)^([a-z_][a-z0-9_-]{0,31}|[a-f0-9]+)$`)
 
 	return &conf, nil
 }

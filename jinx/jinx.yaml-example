@@ -26,5 +26,11 @@
 ## User account to on remote server
 #sshuser: root
 
+## SSL certificates for TLS mutual authentication
+#mutualauth: false
+#sslcafile: /etc/jinx/ca.crt
+#sslcertfile: $HOME/.jinx/client.crt
+#sslkeyfile: $HOME/.jinx/client.key
+
 ## URL of the proxy server (change localhost to your server's hostname)
 #url: https://localhost/
