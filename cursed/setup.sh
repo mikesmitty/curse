@@ -64,7 +64,7 @@ if [ ! -e "$CURSE_ROOT/etc/cursed-client.key" ]; then
     echo
     echo "cp -a $CURSE_ROOT/etc/cursed-client.{key,crt} $CURSE_ROOT/etc/cursed-ca_cert.crt /etc/nginx/"
     echo
-    echo "If using nginx, copy $CURSE_ROOT/etc/cursed.conf-nginx to /etc/nginx/conf.d/cursed.conf or manually include it in your nginx.conf file, after adding your desired configuration settings."
+    echo "Be sure to update $CURSE_ROOT/etc/cursed.conf-nginx and copy it to /etc/nginx/conf.d/cursed.conf or manually include it in your nginx.conf file."
     echo
     echo "cp -a $CURSE_ROOT/etc/cursed.conf-nginx /etc/nginx/conf.d/cursed.conf"
     echo
@@ -77,10 +77,8 @@ if [ ! -e "$CURSE_ROOT/etc/cursed.yaml" ]; then
     chown curse. "$CURSE_ROOT/etc/cursed.yaml"
 
     echo
-    echo "Generated config files for cursed and nginx:"
+    echo "Generated default config file for cursed:"
     echo "$CURSED_ROOT/etc/cursed.yaml"
-    echo "$CURSED_ROOT/etc/cursed-nginx.conf"
-    echo "If using nginx, please move $CURSE_ROOT/etc/cursed.conf-nginx to /etc/nginx/conf.d/ or manually include it in your nginx.conf file after adding your desired configuration settings."
 else
     echo "$CURSE_ROOT/etc/cursed.yaml already exists. Leaving existing config file, but please review $CURSE_ROOT/etc/cursed.yaml-example for any new configuration settings."
 fi
