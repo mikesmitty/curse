@@ -12,7 +12,7 @@ Requirements
 ------------
 * OpenSSH 5.6+  
 * CentOS 7
-* Ubuntu 12.04+
+* Ubuntu 14.04+
 
 Because SSH certificates are a relatively recent feature in OpenSSH, older versions of CentOS unfortunately do not support their use.
 
