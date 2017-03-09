@@ -152,12 +152,12 @@ Configure these fields:
 * `ssl_certificate_key`  
 * `ssl_client_certificate`  
 * `ssl_verify_client`  
-* `proxy_set_header REMOTE_USER $ssl_client_fingerprint`  
+* `proxy_set_header REMOTE_USER $ssl_client_fingerprint;`  
 
 Disable these fields:  
 * `auth_basic`   
 * `auth_basic_user_file`   
-* `proxy_set_header REMOTE_USER $remote_user`;  
+* `proxy_set_header REMOTE_USER $remote_user;`  
 
 Example:
 
@@ -220,10 +220,10 @@ Update the jinx config to enable TLS mutual auth (add or update `mutualauth: tru
 Next, for each user you'll need to generate a client certificate, and be sure to replace `username_here` with their username:
 
     $ export USERNAME="username_here"
-    $ mkdir -p /home/$USERNAME/.jinx/client.key
-    $ openssl ecparam -genkey -name secp384r1 -out /home/$USERNAME/.jinx/client.key
-    $ chmod 600 /home/$USERNAME/.jinx/client.key
-    $ openssl req -new -key /home/$USERNAME/.jinx/client.key -out /home/$USERNAME/.jinx/client.csr -subj "/C=US/ST=State/L=Locality/O=NGINX/CN=$USERNAME"
+    $ sudo mkdir -p /home/$USERNAME/.jinx/
+    $ sudo openssl ecparam -genkey -name secp384r1 -out /home/$USERNAME/.jinx/client.key
+    $ sudo chmod 600 /home/$USERNAME/.jinx/client.key
+    $ sudo openssl req -new -key /home/$USERNAME/.jinx/client.key -out /home/$USERNAME/.jinx/client.csr -subj "/C=US/ST=State/L=Locality/O=NGINX/CN=$USERNAME"
     
 NOTE: You'll want to increment the `-set_serial` argument for each client certificate:
 
