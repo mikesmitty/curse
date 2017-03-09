@@ -70,39 +70,9 @@ if [ ! -e "$CURSE_ROOT/etc/cursed-client.key" ]; then
     echo
 fi
 
-# Generate credentials for configuration files
-if [ ! -e "$CURSE_ROOT/etc/cursed.yaml" ]; then
-    cp -n "$CURSE_ROOT/etc/cursed.yaml-example" "$CURSE_ROOT/etc/cursed.yaml"
-    chmod 600 "$CURSE_ROOT/etc/cursed.yaml"
-    chown curse. "$CURSE_ROOT/etc/cursed.yaml"
-
-    echo
-    echo "Generated default config file for cursed:"
-    echo "$CURSED_ROOT/etc/cursed.yaml"
-else
-    echo "$CURSE_ROOT/etc/cursed.yaml already exists. Leaving existing config file, but please review $CURSE_ROOT/etc/cursed.yaml-example for any new configuration settings."
-fi
-
 # Fix curse directory permissions
 chown -R curse. "$CURSE_ROOT"
 chown root. "$CURSE_ROOT/etc/cursed-client.key"
 chown root. "$CURSE_ROOT/etc/cursed-client.crt"
 chown root. "$CURSE_ROOT/etc/cursed-ca_cert.crt"
 chown root. "$CURSE_ROOT/etc/cursed.conf-nginx"
-
-# This will allow us to run on a privileged port without root privileges
-/usr/sbin/setcap 'cap_net_bind_service=+ep' /opt/curse/sbin/cursed
-
-# Install systemd service
-PKG_CONFIG='/usr/lib/systemd/system'
-if  [ "$PKG_CONFIG" != "" ]; then
-    echo
-    echo "Installing cursed systemd service..."
-    SETCAP=$(which setcap)
-    sed "s|SETCAP|$SETCAP|" "$CURSE_ROOT/etc/cursed.service" >"$PKG_CONFIG/cursed.service"
-    systemctl daemon-reload
-    systemctl enable cursed.service
-    systemctl start cursed.service
-else
-    echo "Systemd unit file directory not found, you will need to install and configure cusred.service manually, or create a startup script for cursed"
-fi
