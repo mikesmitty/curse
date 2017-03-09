@@ -148,17 +148,17 @@ The first step is to generate your server's certificate and key, making sure tha
 Update your nginx config to use this certificate and key for SSL, update your authentication config, and the `proxy_set_header REMOTE_USER` setting as shown below.
 
 ***NOTE***
-Configure these fields:
-`ssl_certificate`
-`ssl_certificate_key`
-`ssl_client_certificate`
-`ssl_verify_client`
-`proxy_set_header REMOTE_USER $ssl_client_fingerprint`
+Configure these fields:  
+* `ssl_certificate`  
+* `ssl_certificate_key`  
+* `ssl_client_certificate`  
+* `ssl_verify_client`  
+* `proxy_set_header REMOTE_USER $ssl_client_fingerprint`  
 
-Disable these fields:
-`auth_basic` 
-`auth_basic_user_file` 
-`proxy_set_header REMOTE_USER $remote_user`;
+Disable these fields:  
+* `auth_basic`   
+* `auth_basic_user_file`   
+* `proxy_set_header REMOTE_USER $remote_user`;  
 
 Example:
 
