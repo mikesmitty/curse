@@ -61,7 +61,7 @@ if [ ! -e "$CURSE_ROOT/etc/cursed-client.key" ]; then
     chmod 644 "$CURSE_ROOT/etc/cursed-ca_cert.crt"
 
     echo "Generated client certificates for cursed and nginx. Please copy them to /etc/nginx/ or your preferred HTTP server's config directory:"
-    ls -l $CURSE_ROOT/etc/cursed-client.{key,crt} $CURSE_ROOT/etc/cursed-ca_cert.crt
+    ls -1 $CURSE_ROOT/etc/cursed-client.{key,crt} $CURSE_ROOT/etc/cursed-ca_cert.crt
     echo
     echo "cp -a $CURSE_ROOT/etc/cursed-client.{key,crt} $CURSE_ROOT/etc/cursed-ca_cert.crt /etc/nginx/"
     echo
