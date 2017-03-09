@@ -94,7 +94,7 @@ chown root. "$CURSE_ROOT/etc/cursed.conf-nginx"
 /usr/sbin/setcap 'cap_net_bind_service=+ep' /opt/curse/sbin/cursed
 
 # Install systemd service
-PKG_CONFIG=$(pkg-config systemd --variable=systemdsystemunitdir)
+PKG_CONFIG='/usr/lib/systemd/system'
 if  [ "$PKG_CONFIG" != "" ]; then
     echo
     echo "Installing cursed systemd service..."
