@@ -13,7 +13,7 @@ Table of Contents
 
 * [Requirements](#requirements)
 * [Install](#install)
-  * [Ubuntu 15.10+](#ubuntu-15.10)
+  * [Ubuntu 15.10+](#ubuntu-1510)
   * [CentOS 7](#centos-7)
 * [TODO List](#todo)
 
