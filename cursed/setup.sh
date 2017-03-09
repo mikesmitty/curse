@@ -22,6 +22,7 @@ if [ ! -e "$CURSE_ROOT/etc/user_ca" ] || [ ! -e "$CURSE_ROOT/etc/user_ca.pub" ];
     chmod 644 "$CURSE_ROOT/etc/user_ca.pub"
     echo "$CURSE_ALGO SSH CA keypair generated. Here is the CA PubKey for adding to your servers:"
     echo
+    echo
     cat "$CURSE_ROOT/etc/user_ca.pub"
     echo
     echo
