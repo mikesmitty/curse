@@ -13,8 +13,9 @@ Table of Contents
 
 * [Requirements](#requirements)
 * [Install](#install)
-  * [Ubuntu 15.10+](#ubuntu-1510)
-  * [CentOS 7](#centos-7)
+  * [Ubuntu](#ubuntu)
+  * [CentOS](#centos)
+* [TLS Mutual Auth Setup](#tls-mutual-auth-setup)
 * [TODO List](#todo)
 
 Requirements
@@ -30,7 +31,9 @@ Install
 -------
 These instructions assume the bastion host is hosting the curse daemon. Adjust instructions as necessary if hosting cursed on another server, but for security reasons the reverse proxy and cursed service should always be hosted on the same server unless you have valid SSL certificates for both the reverse proxy and CURSE daemon, and have the `proxy_ssl_verify` setting enabled in nginx.
 
-###Ubuntu 15.10+
+###Ubuntu
+
+**Ubuntu 15.10+**
 
 First, install the debian repo and GPG key:
 
@@ -78,7 +81,9 @@ Put the contents of `/opt/curse/etc/user_ca.pub` into your /etc/ssh/cas.pub on t
 
 Netflix recommends generating several CA keypairs and storing the private keys of all but one offline, in order to simplify CA key rotation. If you choose to do this you will want to also add the pubkeys of all of your CA keypairs to the `/etc/ssh/cas.pub` file at this time as well.
 
-###CentOS 7
+###CentOS
+
+**CentOS 7**
 
 **NOTICE**: If upgrading from CURSE 0.7 you will need to do some manual cleanup after installing the rpm.  
 Versions 0.8+ use TLS mutual authentication between the reverse proxy and the curse daemon, and no longer support basic auth which was used in 0.7.
@@ -126,6 +131,110 @@ Add `TrustedUserCAKeys /etc/ssh/cas.pub` to `/etc/ssh/sshd_config` and
 Put the contents of `/opt/curse/etc/user_ca.pub` into your /etc/ssh/cas.pub on the destination server.
 
 Netflix recommends generating several CA keypairs and storing the private keys of all but one offline, in order to simplify CA key rotation. If you choose to do this you will want to also add the pubkeys of all of your CA keypairs to the `/etc/ssh/cas.pub` file at this time as well.
+
+###TLS Mutual Auth Setup (password-less)
+
+If you would like to avoid typing your password in each time when generating a certificate you can configure TLS mutual auth for jinx. This configuration also has the side benefit of not requiring a valid SSL certificate from an external certificate authority.
+
+The first step is to generate your server's certificate and key, making sure that `CN=...` matches your nginx FQDN:
+
+    $ cd /etc/nginx/
+    $ sudo openssl ecparam -genkey -name secp384r1 -out jinx-ca.key
+    $ sudo openssl req -new -x509 -sha256 -key jinx-ca.key -out jinx-ca.crt -days 730 -subj "/C=US/ST=State/L=Locality/O=NGINX/CN=localhost"
+    $ sudo chmod 600 jinx-ca.key
+    $ sudo chmod 644 jinx-ca.crt
+    $ sudo chown root. jinx-ca.key jinx-ca.crt
+
+Update your nginx config to use this certificate and key for SSL, update your authentication config, and the `proxy_set_header REMOTE_USER` setting as shown below.
+
+***NOTE***
+Configure these fields:
+`ssl_certificate`
+`ssl_certificate_key`
+`ssl_client_certificate`
+`ssl_verify_client`
+`proxy_set_header REMOTE_USER $ssl_client_fingerprint`
+
+Disable these fields:
+`auth_basic` 
+`auth_basic_user_file` 
+`proxy_set_header REMOTE_USER $remote_user`;
+
+Example:
+
+```
+server {
+  listen       127.0.0.1:443 ssl http2;
+  server_name  localhost;
+
+  ssl                       on;
+  ssl_ciphers               'ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256';
+  ssl_prefer_server_ciphers on;
+  ssl_session_tickets       off;
+  #ssl_certificate           /etc/nginx/cert.pem;
+  #ssl_certificate_key       /etc/nginx/key.pem;
+  ssl_certificate           /etc/nginx/jinx-ca.crt;
+  ssl_certificate_key       /etc/nginx/jinx-ca.key;
+
+  # Enable with client-side TLS mutual auth
+  ssl_client_certificate    /etc/nginx/jinx-ca.crt;
+  ssl_verify_client         on;
+
+  location / {
+      root                 /usr/share/nginx/html;
+      index                index.html index.htm;
+
+      # Comment these fields if not using htpasswd-style authentication (and update with your own auth settings)
+      #auth_basic           "Restricted";
+      #auth_basic_user_file /etc/nginx/htpasswd;
+
+      proxy_pass                    https://localhost:81;
+      proxy_ssl_protocols           TLSv1.2;
+      proxy_ssl_ciphers             'ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256';
+      proxy_ssl_certificate         /etc/nginx/cursed-client.crt;
+      proxy_ssl_certificate_key     /etc/nginx/cursed-client.key;
+      proxy_ssl_trusted_certificate /etc/nginx/cursed-ca_cert.crt;
+      proxy_ssl_verify              on;
+      proxy_set_header              Host        $host;
+
+      # Use with basic auth
+      #proxy_set_header              REMOTE_USER $remote_user;
+
+      # Use with TLS mutual auth
+      proxy_set_header              REMOTE_USER $ssl_client_fingerprint;
+  }
+}
+```
+
+Reload nginx after making your updates:
+
+    $ sudo systemctl reload nginx
+
+Copy the jinx-ca.crt file to `/etc/jinx/`:
+
+    $ sudo cp /etc/nginx/jinx-ca.crt /etc/jinx/ca.crt
+
+Update the jinx config to enable TLS mutual auth (add or update `mutualauth: true`):
+
+    $ sudo vim /etc/jinx/jinx.yaml
+
+Next, for each user you'll need to generate a client certificate, and be sure to replace `username_here` with their username:
+
+    $ export USERNAME="username_here"
+    $ mkdir -p /home/$USERNAME/.jinx/client.key
+    $ openssl ecparam -genkey -name secp384r1 -out /home/$USERNAME/.jinx/client.key
+    $ chmod 600 /home/$USERNAME/.jinx/client.key
+    $ openssl req -new -key /home/$USERNAME/.jinx/client.key -out /home/$USERNAME/.jinx/client.csr -subj "/C=US/ST=State/L=Locality/O=NGINX/CN=$USERNAME"
+    
+NOTE: You'll want to increment the `-set_serial` argument for each client certificate:
+
+    $ sudo openssl x509 -req -sha256 -in /home/$USERNAME/.jinx/client.csr -CA /etc/nginx/jinx-ca.crt -CAkey /etc/nginx/jinx-ca.key -days 730  -set_serial 01 -out /home/$USERNAME/.jinx/client.crt
+    $ sudo chown -R $USERNAME. /home/$USERNAME/.jinx/
+
+If all went well, your users should now be able to request SSH certificates without entering credentials:
+
+    $ jinx
+    $ ssh-keygen -Lf ~/.ssh/id_jinx-cert.pub
 
 TODO
 ----
