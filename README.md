@@ -15,7 +15,7 @@ Table of Contents
 * [Install](#install)
   * [Ubuntu](#ubuntu)
   * [CentOS](#centos)
-* [TLS Mutual Auth Setup](#tls-mutual-auth-setup)
+* [TLS Mutual Auth Setup (password-less)](#tls-mutual-auth-setup-password-less)
 * [TODO List](#todo)
 
 Requirements
