@@ -136,7 +136,7 @@ Netflix recommends generating several CA keypairs and storing the private keys o
 
 If you would like to avoid typing your password in each time when generating a certificate you can configure TLS mutual auth for jinx. This configuration also has the side benefit of not requiring a valid SSL certificate from an external certificate authority.
 
-The first step is to generate your server's certificate and key, making sure that `CN=...` matches your nginx FQDN:
+The first step is to generate your server's certificate and key, making sure that `CN=...` matches your nginx FQDN, if not using localhost-only:
 
     $ cd /etc/nginx/
     $ sudo openssl ecparam -genkey -name secp384r1 -out jinx-ca.key
