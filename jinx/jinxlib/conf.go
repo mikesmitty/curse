@@ -17,6 +17,7 @@ type config struct {
 	userIP      string
 	userName    string
 	userPass    string
+	verbose     bool
 
 	AutoGenKeys   bool
 	BastionIP     string

@@ -16,6 +16,7 @@ func Jinx(verbose bool, args []string) {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
+	conf.verbose = verbose
 
 	// Use our first argument as our command
 	if len(args) > 0 {
@@ -62,6 +63,9 @@ func Jinx(verbose bool, args []string) {
 		}
 
 		// Make the cert request
+		if conf.verbose {
+			fmt.Fprintln(os.Stderr, "Making TLS cert request")
+		}
 		respBody, statusCode, err := requestTLSCert(conf)
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err)
@@ -83,6 +87,9 @@ func Jinx(verbose bool, args []string) {
 	}
 
 	// Send our pubkey to be signed
+	if conf.verbose {
+		fmt.Fprintln(os.Stderr, "Making SSH cert request")
+	}
 	respBody, statusCode, err := requestSSHCert(conf, string(pubKey))
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
