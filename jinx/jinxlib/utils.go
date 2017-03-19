@@ -1,11 +1,14 @@
 package jinxlib
 
 import (
+	"bufio"
 	"fmt"
 	"net"
 	"os"
 	"regexp"
 	"strings"
+
+	"github.com/bgentry/speakeasy"
 )
 
 func expandHome(path string) string {
@@ -36,4 +39,27 @@ func getBastionIP() (string, error) {
 	}
 
 	return "", fmt.Errorf("Found no public IP addresses")
+}
+
+func getUserPass(conf *config) (string, string, error) {
+	// Nag-mode for inadvertent/malicious insecure setting
+	if conf.Insecure {
+		fmt.Println("Warning, your password is about to be sent insecurely. ctrl+c to quit")
+	}
+
+	// Read in our username and password
+	reader := bufio.NewReader(os.Stdin)
+	fmt.Printf("Username: ")
+	user, err := reader.ReadString('\n')
+	if err != nil {
+		return "", "", fmt.Errorf("Input error: %v", err)
+	}
+	user = strings.TrimSpace(user)
+
+	pass, err := speakeasy.Ask("Password: ")
+	if err != nil {
+		return "", "", fmt.Errorf("Shell error: %v", err)
+	}
+
+	return user, pass, nil
 }

@@ -24,14 +24,15 @@ type config struct {
 	KeyGenBitSize int
 	KeyGenPubKey  string
 	KeyGenType    string
-	MutualAuth    bool
 	PubKey        string
 	SSHUser       string
 	SSLCAFile     string
 	SSLCertFile   string
+	SSLKeyCurve   string
 	SSLKeyFile    string
 	Timeout       int
-	URL           string
+	URLAuth       string
+	URLCurse      string
 }
 
 func getConf() (*config, error) {
@@ -75,7 +76,7 @@ func getConf() (*config, error) {
 	}
 
 	// Check for non-SSL URL configuration (for warning)
-	if strings.HasPrefix(conf.URL, "http://") {
+	if strings.HasPrefix(conf.URLAuth, "http://") {
 		conf.Insecure = true
 	}
 
@@ -87,7 +88,7 @@ func getConf() (*config, error) {
 	}
 	sc = os.Getenv("SSH_CONNECTION")
 	scs = strings.Split(sc, " ")
-	if conf.userIP == "" && len(scs) != 0 {
+	if conf.userIP == "" && len(scs) > 0 {
 		conf.userIP = scs[0]
 	}
 	if conf.userIP == "" {

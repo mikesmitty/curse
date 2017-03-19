@@ -1,6 +1,6 @@
 server {
   listen       127.0.0.1:443 ssl http2;
-  server_name  SERVERNAMEHERE;
+  server_name  localhost;
 
   ssl                       on;
   ssl_ciphers               'ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256';
@@ -9,32 +9,27 @@ server {
   ssl_certificate           /etc/nginx/cert.pem;
   ssl_certificate_key       /etc/nginx/key.pem;
 
-  # Enable with client-side TLS mutual auth
-  #ssl_client_certificate    /etc/nginx/jinx-ca.crt;
-  #ssl_verify_client         on;
-
-  location / {
+  location /auth/ {
       root                 /usr/share/nginx/html;
       index                index.html index.htm;
 
-      # Comment these fields if not using htpasswd-style authentication (and update with your own auth settings)
-      auth_basic           "Restricted";
-      auth_basic_user_file /etc/nginx/htpasswd;
+      # PAM authentication
+      auth_pam              "Restricted";
+      auth_pam_service_name "nginx";
+
+      # Uncomment these fields if not using PAM authentication (and update with your own auth settings)
+      #auth_basic           "Restricted";
+      #auth_basic_user_file /etc/nginx/htpasswd;
 
       proxy_pass                    https://localhost:81;
       proxy_ssl_protocols           TLSv1.2;
       proxy_ssl_ciphers             'ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256';
-      proxy_ssl_certificate         /etc/nginx/cursed-client.crt;
-      proxy_ssl_certificate_key     /etc/nginx/cursed-client.key;
-      proxy_ssl_trusted_certificate /etc/nginx/cursed-ca_cert.crt;
+      proxy_ssl_certificate         /opt/curse/etc/broker.crt;
+      proxy_ssl_certificate_key     /opt/curse/etc/broker.key;
+      proxy_ssl_trusted_certificate /opt/curse/etc/cursed.crt;
       proxy_ssl_verify              on;
       proxy_set_header              Host        $host;
-
-      # Use with basic auth
       proxy_set_header              REMOTE_USER $remote_user;
-
-      # Use with TLS mutual auth
-      #proxy_set_header              REMOTE_USER $ssl_client_fingerprint;
   }
 }
 

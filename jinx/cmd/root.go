@@ -29,6 +29,8 @@ import (
 	"github.com/spf13/viper"
 )
 
+var verbose bool
+
 // RootCmd represents the base command when called without any subcommands
 var RootCmd = &cobra.Command{
 	Use:   "jinx",
@@ -38,7 +40,7 @@ It is used to provide short-lived SSH certificates in place of semi-permanent SS
 in authorized_keys files, which are difficult to manage at scale and over long periods
 of time.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		jinxlib.Jinx(args)
+		jinxlib.Jinx(verbose, args)
 	},
 }
 
@@ -55,6 +57,7 @@ func init() {
 	cobra.OnInitialize(initConfig)
 
 	//RootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.jinx.yaml)")
+	RootCmd.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "enable verbose mode")
 }
 
 // initConfig reads in config file and ENV variables if set.
@@ -78,12 +81,13 @@ func initConfig() {
 	viper.SetDefault("keygenbitsize", 2048)
 	viper.SetDefault("keygenpubkey", "$HOME/.ssh/id_jinx.pub")
 	viper.SetDefault("keygentype", "ed25519")
-	viper.SetDefault("mutualauth", false)
 	viper.SetDefault("pubkey", "$HOME/.ssh/id_ed25519.pub")
 	viper.SetDefault("sshuser", "root") // FIXME Need to revisit this?
 	viper.SetDefault("sslcafile", "/etc/jinx/ca.crt")
 	viper.SetDefault("sslcertfile", "$HOME/.jinx/client.crt")
+	viper.SetDefault("sslkeycurve", "p384")
 	viper.SetDefault("sslkeyfile", "$HOME/.jinx/client.key")
 	viper.SetDefault("timeout", 30)
-	viper.SetDefault("url", "https://localhost/")
+	viper.SetDefault("urlauth", "https://localhost/")
+	viper.SetDefault("urlcurse", "https://localhost:81/")
 }

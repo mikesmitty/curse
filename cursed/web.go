@@ -10,23 +10,21 @@ import (
 )
 
 type httpParams struct {
-	bastionIP   string
-	bastionUser string
-	cmd         string
-	key         string
-	remoteUser  string
-	userIP      string
+	bastionIP  string
+	cmd        string
+	key        string
+	remoteUser string
+	userIP     string
 }
 
-func webHandler(w http.ResponseWriter, r *http.Request, conf *config) {
+func sshCertHandler(w http.ResponseWriter, r *http.Request, conf *config) {
 	// Load our form parameters into a struct
 	p := httpParams{
-		bastionIP:   r.PostFormValue("bastionIP"),
-		bastionUser: r.Header.Get(conf.UserHeader),
-		cmd:         r.PostFormValue("cmd"),
-		key:         r.PostFormValue("key"),
-		remoteUser:  r.PostFormValue("remoteUser"), // FIXME this should be re-evaluated as a daemon config option
-		userIP:      r.PostFormValue("userIP"),
+		bastionIP:  r.PostFormValue("bastionIP"),
+		cmd:        r.PostFormValue("cmd"),
+		key:        r.PostFormValue("key"),
+		remoteUser: r.PostFormValue("remoteUser"), // FIXME this should be re-evaluated as a daemon config option
+		userIP:     r.PostFormValue("userIP"),
 	}
 
 	// Set our certificate validity times
@@ -34,22 +32,32 @@ func webHandler(w http.ResponseWriter, r *http.Request, conf *config) {
 	vb := time.Now().Add(conf.dur)
 
 	// Generate a fingerprint of the received public key for our key_id string
-	fp := ""
 	pk, _, _, _, err := ssh.ParseAuthorizedKey([]byte(p.key))
 	if err != nil {
 		log.Printf("Unable to parse authorized key |%s|", p.key)
 		http.Error(w, "Unable to parse authorized key", http.StatusBadRequest)
 		return
 	}
-	fp = ssh.FingerprintLegacyMD5(pk)
+	// Using md5 because that's what ssh-keygen prints out, making searches for a particular key easier
+	fp := ssh.FingerprintLegacyMD5(pk)
+
+	// Check for the client certificate
+	var user string
+	if len(r.TLS.PeerCertificates) > 0 {
+		user = r.TLS.PeerCertificates[0].Subject.CommonName
+	} else {
+		log.Printf("Invalid client certificate")
+		http.Error(w, "Invalid client certificate", http.StatusBadRequest)
+		return
+	}
 
 	// Generate our key_id for the certificate
 	//keyID := fmt.Sprintf("user[%s] from[%s] command[%s] sshKey[%s] ca[%s] valid to[%s]",
 	keyID := fmt.Sprintf("user[%s] from[%s] command[%s] sshKey[%s] valid to[%s]",
-		p.bastionUser, p.userIP, p.cmd, fp, vb.Format(time.RFC3339))
+		user, p.userIP, p.cmd, fp, vb.Format(time.RFC3339))
 
 	// Log the request
-	log.Printf("Request: |%s|", keyID)
+	log.Printf("SSH request: %s", keyID)
 
 	// Make sure we have everything we need from our parameters
 	err = validateHTTPParams(p, conf)
@@ -80,7 +88,7 @@ func webHandler(w http.ResponseWriter, r *http.Request, conf *config) {
 	}
 
 	// Sign the public key
-	authorizedKey, err := signPubKey(conf.caSigner, []byte(p.key), cc)
+	authorizedKey, err := signPubKey(conf.sshCASigner, []byte(p.key), cc)
 	if err != nil {
 		log.Printf("%v", err)
 		http.Error(w, "Server error", http.StatusInternalServerError)
@@ -97,13 +105,6 @@ func validateHTTPParams(p httpParams, conf *config) error {
 	}
 	if p.bastionIP == "" || !validIP(p.bastionIP) {
 		err := fmt.Errorf("bastionIP is invalid")
-		return err
-	}
-	if p.bastionUser == "" {
-		err := fmt.Errorf("%s missing from request", conf.UserHeader)
-		return err
-	} else if !conf.userRegex.MatchString(p.bastionUser) {
-		err := fmt.Errorf("username is invalid")
 		return err
 	}
 	if p.key == "" {
