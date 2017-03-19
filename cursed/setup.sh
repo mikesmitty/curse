@@ -33,6 +33,9 @@ fi
 # Fix curse directory permissions
 chown -R curse. "$CURSE_ROOT"
 
+echo "Starting cursed service"
+systemctl start cursed
+
 # Setup local auth
 echo
 echo
@@ -60,4 +63,9 @@ if [ "$shadow" = "y" ]; then
     fi
 else
     echo "Skipping local auth configuration"
+fi
+
+pid_count=$(ps aux |grep cursed |grep -vc grep)
+if [ "$pid_count" -gt "0" ]; then
+    mkdir -p /etc/jinx/ && cp $CURSE_ROOT/etc/cursed.crt /etc/jinx/ca.crt
 fi
