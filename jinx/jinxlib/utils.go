@@ -11,6 +11,14 @@ import (
 	"github.com/bgentry/speakeasy"
 )
 
+func getPathByFilename(path string) string {
+	path := strings.Split(path, "/")
+	n := len(path) - 1
+	dir := strings.Join(path[:n], "/")
+
+	return dir
+}
+
 func expandHome(path string) string {
 	// Swap out $HOME for service user's home dir in path
 	home := os.Getenv("HOME")

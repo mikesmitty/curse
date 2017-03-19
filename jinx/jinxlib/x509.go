@@ -156,10 +156,19 @@ func genTLSKey(conf *config) ([]byte, error) {
 }
 
 func saveTLSKey(conf *config, keyBytes []byte) error {
+	// Create the jinxDir if it doesn't exist
+	jinxDir := getPathByFilename(conf.SSLKeyFile)
+	if _, err := os.Stat(jinxDir); os.IsNotExist(err) {
+		err := os.MkdirAll(jinxDir, 0700)
+		if err != nil {
+			return fmt.Errorf("Failed to create path to TLS key: %v", err)
+		}
+	}
+
 	if _, err := os.Stat(conf.SSLKeyFile); os.IsNotExist(err) {
 		err := ioutil.WriteFile(conf.SSLKeyFile, keyBytes, 0600)
 		if err != nil {
-			return fmt.Errorf("Failed to write private key file: %v", err)
+			return fmt.Errorf("Failed to write TLS private key file: %v", err)
 		}
 	}
 
