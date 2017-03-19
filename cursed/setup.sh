@@ -61,6 +61,8 @@ if [ "$shadow" = "y" ]; then
     else
         echo "Failed to find nginx user. Please add nginx user to shadow group manually: usermod -a -G shadow NGINX_USER"
     fi
+
+    systemctl restart nginx
 else
     echo "Skipping local auth configuration"
 fi
