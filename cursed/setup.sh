@@ -45,13 +45,18 @@ read shadow
 if [ "$shadow" = "y" ]; then
     echo "Setting /etc/shadow permissions for nginx"
     groupadd -f -r shadow && chown :shadow /etc/shadow && chmod g+r /etc/shadow
+    if [ -f /etc/pam.d/nginx ]; then
+        echo -e "auth    required     pam_unix.so\naccount required     pam_unix.so" >/etc/pam.d/nginx
+    else
+        echo "/etc/pam.d/nginx already exists. Skipping file"
+    fi
 
     ngx_user=$(grep -oP '(?<=user\s)[^;\s]+' /etc/nginx/nginx.conf)
-    if [ -z "$ngx_user" ]; then
-        echo "Failed to find nginx user. Please add nginx user to shadow group manually: usermod -a -G shadow NGINX_USER"
-    else
+    if [ -n "$ngx_user" ]; then
         echo "Adding nginx user $ngx_user to shadow group"
         usermod -a -G shadow $ngx_user
+    else
+        echo "Failed to find nginx user. Please add nginx user to shadow group manually: usermod -a -G shadow NGINX_USER"
     fi
 else
     echo "Skipping local auth configuration"
