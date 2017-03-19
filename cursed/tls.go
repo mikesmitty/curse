@@ -3,9 +3,32 @@ package main
 import (
 	"crypto/tls"
 	"crypto/x509"
+	"encoding/pem"
 	"fmt"
 	"io/ioutil"
 )
+
+func getBrokerFP(conf *config) ([]byte, error) {
+	rawCert, err := ioutil.ReadFile(conf.SSLBrokerCert)
+	if err != nil {
+		return nil, fmt.Errorf("Could not read broker certificate: %v", err)
+	}
+
+	certBlock, _ := pem.Decode(rawCert)
+	if certBlock == nil {
+		return nil, fmt.Errorf("Could not decode broker certificate: %v", err)
+	}
+
+	cert, err := x509.ParseCertificate(certBlock.Bytes)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to parse broker cert: %v", err)
+	}
+
+	// Get a public key fingerprint
+	fp := tlsCertFP(cert)
+
+	return fp, nil
+}
 
 func getTLSConfig(conf *config) (*tls.Config, error) {
 	tlsCACert, err := ioutil.ReadFile(conf.SSLCA)

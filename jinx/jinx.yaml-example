@@ -27,10 +27,12 @@
 #sshuser: root
 
 ## SSL certificates for TLS mutual authentication
-#mutualauth: false
+## Valid sslkeycurves: p256, p384, p521
 #sslcafile: /etc/jinx/ca.crt
 #sslcertfile: $HOME/.jinx/client.crt
+#sslkeycurve: p384
 #sslkeyfile: $HOME/.jinx/client.key
 
-## URL of the proxy server (change localhost to your server's hostname)
-#url: https://localhost/
+## URL of the auth server (change localhost to your server's hostname)
+#urlauth: https://localhost/auth/
+#urlcurse: https://localhost:81/

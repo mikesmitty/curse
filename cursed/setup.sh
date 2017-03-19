@@ -1,7 +1,6 @@
 #!/bin/bash
 
 # Requires:
-# openssl
 # openssh
 # libcap || libcap2-bin (debian/ubuntu)
 
@@ -31,49 +30,42 @@ else
     echo "SSH CA keypair already exists. Skipping generation."
 fi
 
-# Generate SSL key and certificate
-if [ ! -e "$CURSE_ROOT/etc/server.key" ] || [ ! -e "$CURSE_ROOT/etc/server.crt" ]; then
-    echo
-    echo "Generating SSL certificates..."
-    openssl ecparam -genkey -name secp384r1 -out "$CURSE_ROOT/etc/server.key"
-    openssl req -new -x509 -sha256 -key "$CURSE_ROOT/etc/server.key" -out "$CURSE_ROOT/etc/server.crt" -days 730 \
-        -subj "/C=US/ST=State/L=Location/O=CURSE/CN=localhost"
-    chmod 600 "$CURSE_ROOT/etc/server.key"
-    chmod 644 "$CURSE_ROOT/etc/server.crt"
-else
-    echo "SSL certificates already exist. Skipping generation."
-fi
-
-# Generate SSL client key/certs for proxy authentication
-if [ ! -e "$CURSE_ROOT/etc/cursed-client.key" ]; then
-    echo
-    echo "Generating client cert for proxy..."
-    openssl ecparam -genkey -name secp384r1 -out "$CURSE_ROOT/etc/cursed-client.key"
-    openssl req -new -key "$CURSE_ROOT/etc/cursed-client.key" -out "$CURSE_ROOT/etc/cursed-client.csr" -subj "/C=US/ST=State/L=Location/O=NGINX/CN=localhost"
-    openssl x509 -req -sha256 -in "$CURSE_ROOT/etc/cursed-client.csr" -CA "$CURSE_ROOT/etc/server.crt"  -days 730 \
-        -CAkey "$CURSE_ROOT/etc/server.key" -set_serial 01 -out "$CURSE_ROOT/etc/cursed-client.crt"
-    cp -f "$CURSE_ROOT/etc/server.crt" "$CURSE_ROOT/etc/cursed-ca_cert.crt"
-
-    rm -f "$CURSE_ROOT/etc/cursed-client.csr"
-
-    chmod 600 "$CURSE_ROOT/etc/cursed-client.key"
-    chmod 644 "$CURSE_ROOT/etc/cursed-client.crt"
-    chmod 644 "$CURSE_ROOT/etc/cursed-ca_cert.crt"
-
-    echo "Generated client certificates for cursed and nginx. Please copy them to /etc/nginx/ or your preferred HTTP server's config directory:"
-    ls -1 $CURSE_ROOT/etc/cursed-client.{key,crt} $CURSE_ROOT/etc/cursed-ca_cert.crt
-    echo
-    echo "cp -a $CURSE_ROOT/etc/cursed-client.{key,crt} $CURSE_ROOT/etc/cursed-ca_cert.crt /etc/nginx/"
-    echo
-    echo "Be sure to update $CURSE_ROOT/etc/cursed.conf-nginx and copy it to /etc/nginx/conf.d/cursed.conf or manually include it in your nginx.conf file."
-    echo
-    echo "cp -a $CURSE_ROOT/etc/cursed.conf-nginx /etc/nginx/conf.d/cursed.conf"
-    echo
-fi
-
 # Fix curse directory permissions
 chown -R curse. "$CURSE_ROOT"
-chown root. "$CURSE_ROOT/etc/cursed-client.key"
-chown root. "$CURSE_ROOT/etc/cursed-client.crt"
-chown root. "$CURSE_ROOT/etc/cursed-ca_cert.crt"
-chown root. "$CURSE_ROOT/etc/cursed.conf-nginx"
+
+echo "Starting cursed service"
+systemctl start cursed
+
+# Setup local auth
+echo
+echo
+echo "Enable authentication for local users?"
+echo "Note: this requires nginx to be able to read /etc/shadow"
+echo
+echo -n "Allow nginx to read /etc/shadow [y/N]: "
+read shadow
+
+if [ "$shadow" = "y" ]; then
+    echo "Setting /etc/shadow permissions for nginx"
+    groupadd -f -r shadow && chown :shadow /etc/shadow && chmod g+r /etc/shadow
+    if [ -f /etc/pam.d/nginx ]; then
+        echo -e "auth    required     pam_unix.so\naccount required     pam_unix.so" >/etc/pam.d/nginx
+    else
+        echo "/etc/pam.d/nginx already exists. Skipping file"
+    fi
+
+    ngx_user=$(grep -oP '(?<=user\s)[^;\s]+' /etc/nginx/nginx.conf)
+    if [ -n "$ngx_user" ]; then
+        echo "Adding nginx user $ngx_user to shadow group"
+        usermod -a -G shadow $ngx_user
+    else
+        echo "Failed to find nginx user. Please add nginx user to shadow group manually: usermod -a -G shadow NGINX_USER"
+    fi
+else
+    echo "Skipping local auth configuration"
+fi
+
+pid_count=$(ps aux |grep cursed |grep -vc grep)
+if [ "$pid_count" -gt "0" ]; then
+    mkdir -p /etc/jinx/ && cp $CURSE_ROOT/etc/cursed.crt /etc/jinx/ca.crt
+fi

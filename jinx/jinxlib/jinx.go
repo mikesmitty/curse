@@ -1,23 +1,22 @@
 package jinxlib
 
 import (
-	"bufio"
 	"fmt"
 	"io/ioutil"
 	"net/http"
 	"os"
 	"strings"
-
-	"github.com/bgentry/speakeasy"
 )
 
-func Jinx(args []string) {
+// Jinx Run the jinx client to generate keys and make request
+func Jinx(verbose bool, args []string) {
 	// Process/load our config options
 	conf, err := getConf()
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
+	conf.verbose = verbose
 
 	// Use our first argument as our command
 	if len(args) > 0 {
@@ -31,33 +30,67 @@ func Jinx(args []string) {
 		os.Exit(1)
 	}
 
-	// Disable password prompt when using TLS mutual auth
-	// Also disabling insecure nag-mode since the CA may not necessarily be trusted by the system
-	if !conf.MutualAuth {
-		// Nag-mode for inadvertent/malicious insecure setting
-		if conf.Insecure {
-			fmt.Println("Warning, your password is about to be sent insecurely. ctrl+c to quit")
-		}
-
-		// Read in our username and password
-		reader := bufio.NewReader(os.Stdin)
-		fmt.Printf("Username: ")
-		user, err := reader.ReadString('\n')
+	// Check if our TLS key/cert exist and are valid
+	ok, keyExists, err := checkTLSCert(conf)
+	if !ok {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	}
+	if ok && !keyExists {
+		// Key is invalid or does not yet exist
+		keyBytes, err := genTLSKey(conf)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Input error: %v\n", err)
+			fmt.Fprintln(os.Stderr, err)
 			os.Exit(1)
 		}
-		conf.userName = strings.TrimSpace(user)
-
-		conf.userPass, err = speakeasy.Ask("Password: ")
+		err = saveTLSKey(conf, keyBytes)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Shell error: %v\n", err)
+			fmt.Fprintln(os.Stderr, err)
 			os.Exit(1)
+		}
+	}
+	if ok && err != nil {
+		// Cert is invalid, need to request a new cert
+		if verbose {
+			fmt.Fprintln(os.Stderr, err)
+		}
+
+		// Prompt user for username and password
+		conf.userName, conf.userPass, err = getUserPass(conf)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "%v", err)
+			os.Exit(1)
+		}
+
+		// Make the cert request
+		if conf.verbose {
+			fmt.Fprintln(os.Stderr, "Making TLS cert request")
+		}
+		respBody, statusCode, err := requestTLSCert(conf)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(statusCode)
+		}
+
+		switch statusCode {
+		case http.StatusOK:
+			err = ioutil.WriteFile(conf.SSLCertFile, respBody, 0644)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "Failed to write TLS cert file: %v\n", err)
+				os.Exit(1)
+			}
+		default:
+			out := fmt.Sprintf("Server response: %s", respBody)
+			fmt.Fprintf(os.Stderr, out)
+			os.Exit(statusCode)
 		}
 	}
 
 	// Send our pubkey to be signed
-	respBody, statusCode, err := requestCert(conf, string(pubKey))
+	if conf.verbose {
+		fmt.Fprintln(os.Stderr, "Making SSH cert request")
+	}
+	respBody, statusCode, err := requestSSHCert(conf, string(pubKey))
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(statusCode)

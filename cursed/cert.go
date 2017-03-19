@@ -29,10 +29,10 @@ func checkPubKeyAge(conf *config, fp string) (bool, error) {
 
 	// Check if this fingerprint exists in our DB
 	err := conf.db.View(func(tx *bolt.Tx) error {
-		bucket := tx.Bucket(conf.bucketName)
+		bucket := tx.Bucket(conf.bucketNameFP)
 		if bucket == nil {
 			msg := "WARNING: Did not find DB bucket %q. This should only happen with a new db file"
-			return fmt.Errorf(msg, conf.bucketName)
+			return fmt.Errorf(msg, conf.bucketNameFP)
 		}
 
 		// Get timestamp string from database and convert to int
@@ -54,13 +54,12 @@ func checkPubKeyAge(conf *config, fp string) (bool, error) {
 	})
 	if err != nil {
 		log.Printf("%v", err)
-		err = nil
 	}
 
 	// If this is a new key, add it to the database with a timestamp
 	if keyBirthday == 0 {
 		err = conf.db.Update(func(tx *bolt.Tx) error {
-			bucket, err := tx.CreateBucketIfNotExists(conf.bucketName)
+			bucket, err := tx.CreateBucketIfNotExists(conf.bucketNameFP)
 			if err != nil {
 				return err
 			}
@@ -73,6 +72,9 @@ func checkPubKeyAge(conf *config, fp string) (bool, error) {
 			}
 			return nil
 		})
+		if err != nil {
+			return true, err
+		}
 	} else if keyBirthday > 0 {
 		kb := time.Unix(keyBirthday, 0)
 		keyAge := time.Now().Sub(kb)
@@ -87,7 +89,7 @@ func checkPubKeyAge(conf *config, fp string) (bool, error) {
 	return false, nil
 }
 
-func loadCAKey(keyFile string) (ssh.Signer, error) {
+func loadSSHCAKey(keyFile string) (ssh.Signer, error) {
 	// Read in our private key PEM file
 	key, err := ioutil.ReadFile(keyFile)
 	if err != nil {

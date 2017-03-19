@@ -94,7 +94,7 @@ func genKeyPair(conf *config) ([]byte, []byte, error) {
 		}
 		pubKey, ok := privateKey.Public().(*ecdsa.PublicKey)
 		if !ok {
-			return nil, nil, fmt.Errorf("ecdsa.PublicKey type assertion failed on an ecdsa public key. This should never ever happen.")
+			return nil, nil, fmt.Errorf("ecdsa.PublicKey type assertion failed on an ecdsa public key. This should never ever happen")
 		}
 		publicKey, err := ssh.NewPublicKey(pubKey)
 		if err != nil {
@@ -120,7 +120,7 @@ func genKeyPair(conf *config) ([]byte, []byte, error) {
 		}
 		pubKey, ok := privateKey.Public().(*rsa.PublicKey)
 		if !ok {
-			return nil, nil, fmt.Errorf("rsa.PublicKey type assertion failed on an rsa public key. This should never ever happen.")
+			return nil, nil, fmt.Errorf("rsa.PublicKey type assertion failed on an rsa public key. This should never ever happen")
 		}
 		publicKey, err := ssh.NewPublicKey(pubKey)
 		if err != nil {
@@ -135,7 +135,7 @@ func genKeyPair(conf *config) ([]byte, []byte, error) {
 		privateKeyPEM = pem.EncodeToMemory(pemKey)
 		authorizedKey = ssh.MarshalAuthorizedKey(publicKey)
 	default:
-		return nil, nil, fmt.Errorf("Key type '%s' not recognized. Unable to generate new keypair.", conf.KeyGenType)
+		return nil, nil, fmt.Errorf("Key type '%s' not recognized. Unable to generate new keypair", conf.KeyGenType)
 	}
 
 	return authorizedKey, privateKeyPEM, nil
@@ -143,21 +143,21 @@ func genKeyPair(conf *config) ([]byte, []byte, error) {
 
 func saveNewKeyPair(conf *config) error {
 	if !conf.AutoGenKeys {
-		return fmt.Errorf("autogenkeys disabled. Not generating new keys.")
+		return fmt.Errorf("autogenkeys disabled. Not generating new keys")
 	}
 
 	publicKey, privateKey, err := genKeyPair(conf)
 	if err != nil {
-		return fmt.Errorf("Failed to generate new keys: %v\n", err)
+		return fmt.Errorf("Failed to generate new keys: %v", err)
 	}
 
 	err = ioutil.WriteFile(conf.privKeyFile, privateKey, 0600)
 	if err != nil {
-		return fmt.Errorf("Failed to write private key file: %v\n", err)
+		return fmt.Errorf("Failed to write private key file: %v", err)
 	}
 	err = ioutil.WriteFile(conf.pubKeyFile, publicKey, 0644)
 	if err != nil {
-		return fmt.Errorf("Failed to write public key file: %v\n", err)
+		return fmt.Errorf("Failed to write public key file: %v", err)
 	}
 
 	return nil
