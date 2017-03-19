@@ -46,7 +46,8 @@
 ## DNS hostname for the server's certificate
 #sslcerthostname: localhost
 
-## Curve type for the CA private key
+## Curve type for the TLS CA private key
+## Valid curves: p256, p384, p521
 #sslkeycurve: p384
 
 ## Validity duration in minutes of TLS client certificates, before password login is required again
