@@ -54,7 +54,7 @@ if [ "$shadow" = "y" ]; then
         echo "/etc/pam.d/nginx already exists. Skipping file"
     fi
 
-    ngx_user=$(grep -oP '(?<=^user\s)[^;\s]+' /etc/nginx/nginx.conf)
+    ngx_user=$(grep ^user /etc/nginx/nginx.conf |sed -r -e 's/user\s+//' -e 's/\s*;//')
     if [ -n "$ngx_user" ]; then
         echo "Adding nginx user $ngx_user to shadow group"
         usermod -a -G shadow $ngx_user
