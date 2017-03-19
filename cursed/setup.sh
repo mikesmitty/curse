@@ -30,8 +30,9 @@ else
     echo "SSH CA keypair already exists. Skipping generation."
 fi
 
-# Fix curse directory permissions
+# Fix curse permissions
 chown -R curse. "$CURSE_ROOT"
+/usr/bin/env setcap 'cap_net_bind_service=+ep' /opt/curse/sbin/cursed
 
 echo "Starting cursed service"
 systemctl start cursed
@@ -63,6 +64,17 @@ if [ "$shadow" = "y" ]; then
     fi
 else
     echo "Skipping local auth configuration"
+fi
+
+# Configure nginx
+if [ -d /etc/nginx/conf.d/ ] && [ !-e /etc/nginx/conf.d/cursed.conf ]; then
+    echo
+    echo "Copying nginx config to /etc/nginx/conf.d/"
+    cp /opt/curse/etc/cursed.conf-nginx /etc/nginx/conf.d/
+fi
+if [ !-d /etc/nginx/conf.d/ ]; then
+    echo "nginx conf.d folder does not exist. You will need to copy the nginx config manually:"
+    echo "cp /opt/curse/etc/cursed.conf-nginx /etc/nginx/conf.d/"
 fi
 
 pid_count=$(ps aux |grep cursed |grep -vc grep)
