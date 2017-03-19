@@ -39,7 +39,6 @@ systemctl start cursed
 
 # Setup local auth
 echo
-echo
 echo "Enable authentication for local users?"
 echo "Note: this requires nginx to be able to read /etc/shadow"
 echo
@@ -49,13 +48,13 @@ read shadow
 if [ "$shadow" = "y" ]; then
     echo "Setting /etc/shadow permissions for nginx"
     groupadd -f -r shadow && chown :shadow /etc/shadow && chmod g+r /etc/shadow
-    if [ -f /etc/pam.d/nginx ]; then
+    if [ ! -f /etc/pam.d/nginx ]; then
         echo -e "auth    required     pam_unix.so\naccount required     pam_unix.so" >/etc/pam.d/nginx
     else
         echo "/etc/pam.d/nginx already exists. Skipping file"
     fi
 
-    ngx_user=$(grep -oP '(?<=user\s)[^;\s]+' /etc/nginx/nginx.conf)
+    ngx_user=$(grep -oP '(?<=^user\s)[^;\s]+' /etc/nginx/nginx.conf)
     if [ -n "$ngx_user" ]; then
         echo "Adding nginx user $ngx_user to shadow group"
         usermod -a -G shadow $ngx_user
@@ -67,14 +66,13 @@ else
 fi
 
 # Configure nginx
-if [ -d /etc/nginx/conf.d/ ] && [ !-e /etc/nginx/conf.d/cursed.conf ]; then
-    echo
+if [ -d /etc/nginx/conf.d ] && [ ! -e /etc/nginx/conf.d/cursed.conf ]; then
     echo "Copying nginx config to /etc/nginx/conf.d/"
-    cp /opt/curse/etc/cursed.conf-nginx /etc/nginx/conf.d/
+    cp /opt/curse/etc/cursed.conf-nginx /etc/nginx/conf.d/cursed.conf
 fi
-if [ !-d /etc/nginx/conf.d/ ]; then
-    echo "nginx conf.d folder does not exist. You will need to copy the nginx config manually:"
-    echo "cp /opt/curse/etc/cursed.conf-nginx /etc/nginx/conf.d/"
+if [ ! -d /etc/nginx/conf.d/ ]; then
+    echo "nginx conf.d folder does not exist. You will need to copy the nginx config manually after installing nginx:"
+    echo "cp /opt/curse/etc/cursed.conf-nginx /etc/nginx/conf.d/cursed.conf"
 fi
 
 pid_count=$(ps aux |grep cursed |grep -vc grep)
