@@ -34,5 +34,5 @@
 #sslkeyfile: $HOME/.jinx/client.key
 
 ## URL of the auth server (change localhost to your server's hostname)
-#urlauth: https://localhost/
+#urlauth: https://localhost/auth/
 #urlcurse: https://localhost:81/
