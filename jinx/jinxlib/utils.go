@@ -12,9 +12,9 @@ import (
 )
 
 func getPathByFilename(path string) string {
-	path := strings.Split(path, "/")
-	n := len(path) - 1
-	dir := strings.Join(path[:n], "/")
+	e := strings.Split(path, "/")
+	n := len(e) - 1
+	dir := strings.Join(e[:n], "/")
 
 	return dir
 }
