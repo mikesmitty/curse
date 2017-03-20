@@ -88,7 +88,7 @@ func initConfig() {
 	viper.SetDefault("sslkeycurve", "p384")
 	viper.SetDefault("sslkeyfile", "$HOME/.jinx/client.key")
 	viper.SetDefault("timeout", 30)
-	viper.SetDefault("urlauth", "https://localhost/auth/")
-	viper.SetDefault("urlcurse", "https://localhost:81/")
+	viper.SetDefault("urlauth", "https://localhost/")
+	viper.SetDefault("urlcurse", "https://localhost:444/")
 	viper.SetDefault("usesslca", true)
 }

@@ -135,7 +135,7 @@ func main() {
 	certServer := http.NewServeMux()
 
 	// Set our cert service web handler
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+	certServer.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		sshCertHandler(w, r, conf)
 	})
 
@@ -185,6 +185,7 @@ func init() {
 	viper.SetDefault("forcecmd", false)
 	viper.SetDefault("maxkeyage", 90) // 90 day default
 	viper.SetDefault("pwauth", "/usr/bin/pwauth")
+	viper.SetDefault("pwauthtimeout", 30) // 30 second default
 	viper.SetDefault("requireclientip", true)
 	viper.SetDefault("sslauthcert", "/opt/curse/etc/cursed.crt")
 	viper.SetDefault("sslauthkey", "/opt/curse/etc/cursed.key")

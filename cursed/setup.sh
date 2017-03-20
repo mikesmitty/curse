@@ -34,11 +34,16 @@ fi
 chown -R curse. "$CURSE_ROOT"
 /usr/bin/env setcap 'cap_net_bind_service=+ep' /opt/curse/sbin/cursed
 
+# Add ourselves to the apache group on centos for access to pwauth
+if [ -f /etc/redhat-release ]; then
+    usermod -a -G apache curse
+fi
+
 echo "Starting cursed service"
 systemctl start cursed
 
 # Copy the newly-generated CA file to /etc/jinx/ca.crt
-sleep 3
+sleep 2
 pid_count=$(ps aux |grep cursed |grep -vc grep)
 if [ "$pid_count" -gt "0" ]; then
     mkdir -p /etc/jinx/ && cp $CURSE_ROOT/etc/cursed.crt /etc/jinx/ca.crt
