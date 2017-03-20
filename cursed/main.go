@@ -104,8 +104,10 @@ func main() {
 
 	// Start auth service
 	go func() {
+		authServer := http.NewServeMux()
+
 		// Set our auth service web handler
-		http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		authServer.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 			tlsCertHandler(w, r, conf)
 		})
 
@@ -117,6 +119,7 @@ func main() {
 		}
 		server := &http.Server{
 			Addr:      addrPort,
+			Handler:   authServer,
 			TLSConfig: tlsConf,
 		}
 
@@ -129,6 +132,8 @@ func main() {
 	}()
 
 	// Start our cert signing service
+	certServer := http.NewServeMux()
+
 	// Set our cert service web handler
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		sshCertHandler(w, r, conf)
@@ -142,6 +147,7 @@ func main() {
 	}
 	server := &http.Server{
 		Addr:      addrPort,
+		Handler:   certServer,
 		TLSConfig: tlsConf,
 	}
 

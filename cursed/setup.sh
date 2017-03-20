@@ -42,4 +42,8 @@ sleep 3
 pid_count=$(ps aux |grep cursed |grep -vc grep)
 if [ "$pid_count" -gt "0" ]; then
     mkdir -p /etc/jinx/ && cp $CURSE_ROOT/etc/cursed.crt /etc/jinx/ca.crt
+else
+    echo "If using jinx on this server, copy the newly generate curse CA certificate to /etc/jinx/"
+    echo "mkdir -p /etc/jinx/"
+    echo "cp $CURSE_ROOT/etc/cursed.crt /etc/jinx/ca.crt"
 fi
