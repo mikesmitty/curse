@@ -90,4 +90,5 @@ func initConfig() {
 	viper.SetDefault("timeout", 30)
 	viper.SetDefault("urlauth", "https://localhost/auth/")
 	viper.SetDefault("urlcurse", "https://localhost:81/")
+	viper.SetDefault("usesslca", true)
 }

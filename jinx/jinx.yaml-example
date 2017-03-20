@@ -34,5 +34,9 @@
 #sslkeyfile: $HOME/.jinx/client.key
 
 ## URL of the auth server (change localhost to your server's hostname)
-#urlauth: https://localhost/auth/
-#urlcurse: https://localhost:81/
+#urlauth: https://localhost:443/
+#urlcurse: https://localhost:444/
+
+## Use the sslcafile to authenticate the authentication server
+## Should be disabled if using a Let's Encrypt certificate, or other certificate authority this system already trusts
+#usesslca: true

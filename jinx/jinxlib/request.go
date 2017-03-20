@@ -73,8 +73,24 @@ func requestTLSCert(conf *config) ([]byte, int, error) {
 		return nil, 1, err
 	}
 
-	// For regular TLS connections set our verify settings
-	tlsConf := &tls.Config{InsecureSkipVerify: conf.Insecure}
+	var tlsConf *tls.Config
+	if conf.UseSSLCA {
+		// Use /etc/jinx/ca.crt as our CA for verifying the curse daemon
+		ca, err := ioutil.ReadFile(conf.SSLCAFile)
+		if err != nil {
+			return nil, 1, fmt.Errorf("Failed to load TLS mutual auth CA: %v", err)
+		}
+		certPool := x509.NewCertPool()
+		certPool.AppendCertsFromPEM(ca)
+
+		tlsConf = &tls.Config{
+			RootCAs: certPool,
+		}
+		tlsConf.BuildNameToCertificate()
+	} else {
+		// For regular TLS connections set our verify settings
+		tlsConf = &tls.Config{InsecureSkipVerify: conf.Insecure}
+	}
 
 	tr := &http.Transport{
 		TLSClientConfig: tlsConf,
@@ -93,12 +109,6 @@ func requestTLSCert(conf *config) ([]byte, int, error) {
 	req, err := http.NewRequest("POST", conf.URLAuth, strings.NewReader(form.Encode()))
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 
-	/* Using basic auth for the initial prototype, since presumably this SSL certificate will be valid and
-	relatively insusceptible to MITM. Also, the digest auth client libraries I've seen are kinda bad.
-	I plan to come back and try writing a digest library once I get the prototype functional (and not in
-	a time crunch to make a demo). */
-	// Looks like support for auth_digest is somewhat lacking in nginx. This will have to wait a while longer.
-	// Maybe I'll add digest support for use with Apache at some point
 	req.SetBasicAuth(conf.userName, conf.userPass)
 
 	resp, err := client.Do(req)

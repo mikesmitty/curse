@@ -16,7 +16,7 @@ import (
 )
 
 type config struct {
-	brokerFP         []byte
+	authTimeout      time.Duration
 	bucketNameFP     []byte
 	bucketNameSerial []byte
 	db               *bolt.DB
@@ -29,26 +29,28 @@ type config struct {
 	tlsCAKey         *ecdsa.PrivateKey
 	userRegex        *regexp.Regexp
 
-	Addr              string
-	CAKeyFile         string
-	DBFile            string
-	Duration          int
-	Extensions        []string
-	ForceCmd          bool
-	MaxKeyAge         int
-	Port              int
-	RequireClientIP   bool
-	SSLBrokerCert     string
-	SSLBrokerHostname string
-	SSLBrokerKey      string
-	SSLCA             string
-	SSLCADuration     int
-	SSLCert           string
-	SSLCertHostname   string
-	SSLKey            string
-	SSLKeyCurve       string
-	SSLDuration       int
-	UserHeader        string
+	Addr            string
+	AuthPort        int
+	CAKeyFile       string
+	CertPort        int
+	DBFile          string
+	Duration        int
+	Extensions      []string
+	ForceCmd        bool
+	MaxKeyAge       int
+	RequireClientIP bool
+	Pwauth          string
+	PwauthTimeout   int
+	SSLAuthCert     string
+	SSLAuthKey      string
+	SSLCA           string
+	SSLCADuration   int
+	SSLCert         string
+	SSLCertHostname string
+	SSLKey          string
+	SSLKeyCurve     string
+	SSLDuration     int
+	UserHeader      string
 }
 
 func main() {
@@ -75,6 +77,9 @@ func main() {
 		conf.tlsDur = time.Duration(conf.SSLDuration) * time.Second
 	}
 
+	// Convert our auth command timeout to a duration
+	conf.authTimeout = time.Duration(conf.PwauthTimeout) * time.Second
+
 	// Load the CA key into an ssh.Signer
 	conf.sshCASigner, err = loadSSHCAKey(conf.CAKeyFile)
 	if err != nil {
@@ -97,25 +102,41 @@ func main() {
 		log.Printf("%v", err)
 	}
 
-	// Get a fingerprint of the broker cert to restrict certificate signing
-	conf.brokerFP, err = getBrokerFP(conf)
-	if err != nil {
-		log.Fatal(err)
-	}
+	// Start auth service
+	go func() {
+		// Set our auth service web handler
+		http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+			tlsCertHandler(w, r, conf)
+		})
 
-	// Set our web handler function
+		// Prepare our TLS settings
+		addrPort := fmt.Sprintf("%s:%d", conf.Addr, conf.AuthPort)
+		tlsConf, err := getAuthTLSConfig(conf)
+		if err != nil {
+			log.Fatal(err)
+		}
+		server := &http.Server{
+			Addr:      addrPort,
+			TLSConfig: tlsConf,
+		}
+
+		// Start our listener service
+		log.Printf("Starting HTTPS server on %s", addrPort)
+		err = server.ListenAndServeTLS(conf.SSLAuthCert, conf.SSLAuthKey)
+		if err != nil {
+			log.Fatalf("Listener service: %v", err)
+		}
+	}()
+
+	// Start our cert signing service
+	// Set our cert service web handler
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		sshCertHandler(w, r, conf)
 	})
 
-	// Set our web handler function
-	http.HandleFunc("/auth/", func(w http.ResponseWriter, r *http.Request) {
-		tlsCertHandler(w, r, conf)
-	})
-
 	// Prepare our TLS settings
-	addrPort := fmt.Sprintf("%s:%d", conf.Addr, conf.Port)
-	tlsConf, err := getTLSConfig(conf)
+	addrPort := fmt.Sprintf("%s:%d", conf.Addr, conf.CertPort)
+	tlsConf, err := getCertTLSConfig(conf)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -149,17 +170,18 @@ func init() {
 	}
 
 	viper.SetDefault("addr", "127.0.0.1")
+	viper.SetDefault("authport", 443)
 	viper.SetDefault("cakeyfile", "/opt/curse/etc/user_ca")
+	viper.SetDefault("certport", 444)
 	viper.SetDefault("dbfile", "/opt/curse/etc/cursed.db")
 	viper.SetDefault("duration", 2*60) // 2 minute default
 	viper.SetDefault("extensions", []string{"permit-pty"})
 	viper.SetDefault("forcecmd", false)
 	viper.SetDefault("maxkeyage", 90) // 90 day default
-	viper.SetDefault("port", 81)
+	viper.SetDefault("pwauth", "/usr/bin/pwauth")
 	viper.SetDefault("requireclientip", true)
-	viper.SetDefault("sslbrokercert", "/opt/curse/etc/broker.crt")
-	viper.SetDefault("sslbrokerhostname", "localhost")
-	viper.SetDefault("sslbrokerkey", "/opt/curse/etc/broker.key")
+	viper.SetDefault("sslauthcert", "/opt/curse/etc/cursed.crt")
+	viper.SetDefault("sslauthkey", "/opt/curse/etc/cursed.key")
 	viper.SetDefault("sslca", "/opt/curse/etc/cursed.crt")
 	viper.SetDefault("sslcaduration", 730) // 2 year default
 	viper.SetDefault("sslcert", "/opt/curse/etc/cursed.crt")
@@ -167,7 +189,6 @@ func init() {
 	viper.SetDefault("sslkey", "/opt/curse/etc/cursed.key")
 	viper.SetDefault("sslkeycurve", "p384")
 	viper.SetDefault("sslduration", 12*60) // 12 hour default
-	viper.SetDefault("userheader", "REMOTE_USER")
 }
 
 func validateExtensions(confExts []string) (map[string]string, []error) {
@@ -227,8 +248,7 @@ func getConf() (*config, error) {
 
 	// Compile our user-matching regex (usernames are limited to 32 characters, must start
 	// with a-z or _, and contain only these characters: a-z, 0-9, - and _
-	// With TLS mutual auth, the certificate fingerprint is used in place of a username ($ssl_client_fingerprint in nginx)
-	conf.userRegex = regexp.MustCompile(`(?i)^([a-z_][a-z0-9_-]{0,31}|[a-f0-9]+)$`)
+	conf.userRegex = regexp.MustCompile(`(?i)^[a-z_][a-z0-9_-]{0,31}$`)
 
 	return &conf, nil
 }

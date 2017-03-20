@@ -21,7 +21,6 @@ type certOpts struct {
 	CN        string
 	CSR       *x509.CertificateRequest
 	IsCA      bool
-	IsBroker  bool
 	PubKey    *ecdsa.PublicKey
 	NotBefore time.Time
 	NotAfter  time.Time
@@ -118,11 +117,6 @@ func tlsSignCert(c certOpts) ([]byte, []byte, error) {
 		tmpl.ExtKeyUsage = append(tmpl.ExtKeyUsage, x509.ExtKeyUsageServerAuth)
 
 		certBytes, err = x509.CreateCertificate(rand.Reader, tmpl, tmpl, &c.CAKey.PublicKey, c.CAKey)
-		if err != nil {
-			return nil, nil, fmt.Errorf("Failed to create certificate: %v", err)
-		}
-	} else if c.IsBroker {
-		certBytes, err = x509.CreateCertificate(rand.Reader, tmpl, c.CA, c.PubKey, c.CAKey)
 		if err != nil {
 			return nil, nil, fmt.Errorf("Failed to create certificate: %v", err)
 		}

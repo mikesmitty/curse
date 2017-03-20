@@ -2,7 +2,8 @@
 #addr: 127.0.0.1
 
 ## Port to listen on (should be a privileged port < 1024 for security)
-#port: 81
+#authport: 443
+#certport: 444
 
 ## Location of the SSH CA key
 #cakeyfile: /opt/curse/etc/user_ca
@@ -28,22 +29,26 @@
 ## Set to -1 to disable key cycling
 #maxkeyage: 90
 
+## pwauth binary path (/usr/sbin/pwauth on debian/ubuntu)
+#pwauth: /usr/bin/pwauth
+#pwauthtimeout: 30
+
+## Require client IP to be sent with ssh cert requests (as set by ssh in the SSH_CLIENT and SSH_CONNECTION environment variables)
+#requireclientip: true
+
+## SSL key and cert for auth service (by default these are pinned to the cert service CA in jinx)
+#sslauthcert: /opt/curse/etc/auth.crt
+#sslauthkey: /opt/curse/etc/auth.key
+
 ## SSL key and cert for cursed service
-## For simplicity's sake we're using the server's cert as the CA, but you can use a proper CA setup as well
 #sslca: /opt/curse/etc/cursed.crt
 #sslcert: /opt/curse/etc/cursed.crt
 #sslkey: /opt/curse/etc/cursed.key
 
-## Location where the authentication broker's (nginx) certs will be saved when generated
-#sslbrokercert: /opt/curse/etc/broker.crt
-#sslbrokerkey: /opt/curse/etc/broker.key
-## DNS hostname for the broker's (nginx) client certificate
-#sslbrokerhostname: localhost
-
 ## Validity duration in days of the auto-generated CA certificate
 #sslcaduration: 730
 
-## DNS hostname for the server's certificate
+## DNS hostname for the cert service's certificate (must be accurate for running curse on another server)
 #sslcerthostname: localhost
 
 ## Curve type for the TLS CA private key

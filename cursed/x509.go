@@ -1,7 +1,6 @@
 package main
 
 import (
-	"crypto/ecdsa"
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
@@ -29,7 +28,6 @@ func genTLSCACert(conf *config) error {
 	opts := certOpts{
 		CAKey:     caKey,
 		CN:        "curse",
-		IsBroker:  false,
 		IsCA:      true,
 		NotBefore: notBefore,
 		NotAfter:  notAfter,
@@ -66,56 +64,8 @@ func genTLSCACert(conf *config) error {
 	return nil
 }
 
-func genTLSBrokerCert(conf *config) error {
-	// Generate broker private key
-	keyBytes, key, err := tlsGenKey(conf.SSLKeyCurve)
-	pubKey := key.Public().(*ecdsa.PublicKey)
-
-	// Set our broker cert validity constraints (same as the CA certs)
-	notBefore := time.Now()
-	notAfter := notBefore.Add(time.Duration(conf.SSLCADuration) * 24 * time.Hour)
-
-	// Get the next available serial number
-	serial, err := incDBSerial(conf)
-	if err != nil {
-		return fmt.Errorf("Failed to generate broker cert: %v", err)
-	}
-
-	// Set our CA cert options
-	opts := certOpts{
-		CA:        conf.tlsCACert,
-		CAKey:     conf.tlsCAKey,
-		CN:        "nginx",
-		IsBroker:  true,
-		IsCA:      false,
-		NotBefore: notBefore,
-		NotAfter:  notAfter,
-		PubKey:    pubKey,
-		SAN:       conf.SSLBrokerHostname,
-		Serial:    serial,
-	}
-
-	// Sign the CA cert
-	cert, _, err := tlsSignCert(opts)
-	if err != nil {
-		return fmt.Errorf("Failed to generate CA cert: %v", err)
-	}
-
-	err = ioutil.WriteFile(conf.SSLBrokerKey, keyBytes, 0600)
-	if err != nil {
-		return fmt.Errorf("Failed to write CA private key file: %v", err)
-	}
-
-	err = ioutil.WriteFile(conf.SSLBrokerCert, cert, 0644)
-	if err != nil {
-		return fmt.Errorf("Failed to write cert file: %v", err)
-	}
-
-	return nil
-}
-
 func signTLSClientCert(conf *config, csr *x509.CertificateRequest) ([]byte, []byte, error) {
-	// Set our broker cert validity constraints (same as the CA certs)
+	// Set our cert validity constraints
 	notBefore := time.Now()
 	notAfter := notBefore.Add(time.Duration(conf.SSLDuration) * time.Minute)
 
@@ -130,7 +80,6 @@ func signTLSClientCert(conf *config, csr *x509.CertificateRequest) ([]byte, []by
 		CA:        conf.tlsCACert,
 		CAKey:     conf.tlsCAKey,
 		CSR:       csr,
-		IsBroker:  false,
 		IsCA:      false,
 		NotBefore: notBefore,
 		NotAfter:  notAfter,
@@ -149,8 +98,8 @@ func signTLSClientCert(conf *config, csr *x509.CertificateRequest) ([]byte, []by
 func initTLSCerts(conf *config) (bool, error) {
 	var err error
 
-	_, errK := os.Stat(conf.SSLBrokerKey)
-	_, errC := os.Stat(conf.SSLBrokerCert)
+	_, errK := os.Stat(conf.SSLKey)
+	_, errC := os.Stat(conf.SSLCert)
 	if os.IsNotExist(errK) && os.IsNotExist(errC) {
 		// Generate CA/server key/cert
 		err = genTLSCACert(conf)
@@ -171,16 +120,6 @@ func initTLSCerts(conf *config) (bool, error) {
 	err = loadTLSCA(conf)
 	if err != nil {
 		return false, err
-	}
-
-	// Check for broker key/cert and generate if necessary
-	_, errK = os.Stat(conf.SSLBrokerKey)
-	_, errC = os.Stat(conf.SSLBrokerCert)
-	if os.IsNotExist(errK) || os.IsNotExist(errC) {
-		err = genTLSBrokerCert(conf)
-		if err != nil {
-			return false, err
-		}
 	}
 
 	return true, nil

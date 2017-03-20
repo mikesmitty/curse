@@ -34,6 +34,7 @@ type config struct {
 	Timeout       int
 	URLAuth       string
 	URLCurse      string
+	UseSSLCA      bool
 }
 
 func getConf() (*config, error) {

@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bytes"
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
@@ -16,29 +15,31 @@ type tlsParams struct {
 }
 
 func tlsCertHandler(w http.ResponseWriter, r *http.Request, conf *config) {
-	// Verify we're receiving this request from the cert broker
-	if len(r.TLS.PeerCertificates) > 0 {
-		fp := tlsCertFP(r.TLS.PeerCertificates[0])
-		if bytes.Compare(conf.brokerFP, fp) != 0 {
-			log.Printf("Not authorized to generate certificates: ip[%s] user[%s] cert[%s]", r.RemoteAddr, r.TLS.PeerCertificates[0].Subject.CommonName, fp)
-			http.Error(w, "Not authorized", http.StatusUnauthorized)
-			return
-		}
-	} else {
-		log.Printf("Invalid connection")
-		http.Error(w, "Invalid connection", http.StatusBadRequest)
+	// Get our user/pass from basic auth
+	user, pass, ok := r.BasicAuth()
+	if !ok {
+		log.Printf("Client basic auth failure")
+		http.Error(w, "Not authorized", http.StatusUnauthorized)
+		return
+	}
+
+	// Check the credentials
+	ok, err := pwauth(conf, user, pass)
+	if !ok {
+		log.Printf("Authorization failure: %v", err)
+		http.Error(w, "Not authorized", http.StatusUnauthorized)
 		return
 	}
 
 	// Load our form parameters into a struct
 	p := tlsParams{
-		bastionUser: r.Header.Get(conf.UserHeader),
+		bastionUser: user,
 		csr:         r.PostFormValue("csr"),
 		userIP:      r.PostFormValue("userIP"),
 	}
 
 	// Make sure we have everything we need from our parameters
-	err := validateTLSParams(p, conf)
+	err = validateTLSParams(p, conf)
 	if err != nil {
 		errMsg := fmt.Sprintf("Param validation failure: %v", err)
 		log.Printf(errMsg)
