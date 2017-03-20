@@ -34,9 +34,12 @@ fi
 chown -R curse. "$CURSE_ROOT"
 /usr/bin/env setcap 'cap_net_bind_service=+ep' /opt/curse/sbin/cursed
 
-# Add ourselves to the apache group on centos for access to pwauth
 if [ -f /etc/redhat-release ]; then
+    # Add ourselves to the apache group on centos for access to pwauth
     usermod -a -G apache curse
+elif [ -f /etc/debian_version ]; then
+    # Update the pwauth path in cursed.yaml for debian/ubuntu
+    sed -i 's|^pwauth: /usr/bin/|pwauth: /usr/sbin/|' $CURSE_ROOT/etc/cursed.yaml
 fi
 
 echo "Starting cursed service"

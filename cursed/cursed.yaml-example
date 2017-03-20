@@ -31,6 +31,7 @@
 
 ## pwauth binary path (/usr/sbin/pwauth on debian/ubuntu)
 #pwauth: /usr/bin/pwauth
+pwauth: /usr/bin/pwauth
 #pwauthtimeout: 30
 
 ## Require client IP to be sent with ssh cert requests (as set by ssh in the SSH_CLIENT and SSH_CONNECTION environment variables)
