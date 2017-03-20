@@ -32,7 +32,7 @@ Install
 -------
 These instructions assume the bastion host is hosting the curse daemon. Adjust instructions as necessary if hosting cursed on another server.
 
-###Ubuntu/Debian
+### Ubuntu/Debian
 
 **Ubuntu 15.10+/Debian 8+**
 
@@ -63,7 +63,7 @@ Put the contents of `/opt/curse/etc/user_ca.pub` into your /etc/ssh/cas.pub on t
 
 Netflix recommends generating several CA keypairs and storing the private keys of all but one offline, in order to simplify CA key rotation. If you choose to do this you will want to also add the pubkeys of all of your CA keypairs to the `/etc/ssh/cas.pub` file at this time as well.
 
-###CentOS
+### CentOS
 
 **CentOS 7**
 
