@@ -13,7 +13,7 @@ Table of Contents
 
 * [Requirements](#requirements)
 * [Install](#install)
-  * [Ubuntu](#ubuntu)
+  * [Ubuntu/Debian](#ubuntudebian)
   * [CentOS](#centos)
 * [TODO List](#todo)
 
