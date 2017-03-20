@@ -25,8 +25,6 @@ Requirements
 * Ubuntu 15.10+ (Server running CURSE daemon)
 * Debian 7+ (Destination servers)
 * Debian 8+ (Server running CURSE daemon)
-  * Requires nginx-full 1.10 from backports
-  * Local auth using PAM is not supported, however LDAP with PAM should work
 
 Because SSH certificates are a relatively recent feature in OpenSSH, older versions of CentOS unfortunately do not support their use.
 
