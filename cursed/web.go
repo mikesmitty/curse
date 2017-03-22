@@ -28,7 +28,7 @@ func sshCertHandler(w http.ResponseWriter, r *http.Request, conf *config) {
 	}
 
 	// Set our certificate validity times
-	va := time.Now()
+	va := time.Now().Add(-30 * time.Second)
 	vb := time.Now().Add(conf.dur)
 
 	// Generate a fingerprint of the received public key for our key_id string
