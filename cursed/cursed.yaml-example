@@ -29,17 +29,22 @@
 ## Set to -1 to disable key cycling
 #maxkeyage: 90
 
+## Principal user/PAM group alias file (format: ssh_principal:pam_group1,pam_group2)
+## Additionally, asterisks can be used as a wildcard like so: root:*
+#principalaliases: /opt/curse/etc/aliases.conf
+
 ## pwauth binary path (/usr/sbin/pwauth on debian/ubuntu)
 #pwauth: /usr/bin/pwauth
 pwauth: /usr/bin/pwauth
-#pwauthtimeout: 30
+#unixgroup: /opt/curse/sbin/unixgroup
+#authtimeout: 30
 
 ## Require client IP to be sent with ssh cert requests (as set by ssh in the SSH_CLIENT and SSH_CONNECTION environment variables)
 #requireclientip: true
 
 ## SSL key and cert for auth service (by default these are pinned to the cert service CA in jinx)
-#sslauthcert: /opt/curse/etc/auth.crt
-#sslauthkey: /opt/curse/etc/auth.key
+#sslauthcert: /opt/curse/etc/cursed.crt
+#sslauthkey: /opt/curse/etc/cursed.key
 
 ## SSL key and cert for cursed service
 #sslca: /opt/curse/etc/cursed.crt

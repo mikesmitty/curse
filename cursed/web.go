@@ -15,6 +15,7 @@ type httpParams struct {
 	key        string
 	remoteUser string
 	userIP     string
+	user       string
 }
 
 func sshCertHandler(w http.ResponseWriter, r *http.Request, conf *config) {
@@ -23,7 +24,7 @@ func sshCertHandler(w http.ResponseWriter, r *http.Request, conf *config) {
 		bastionIP:  r.PostFormValue("bastionIP"),
 		cmd:        r.PostFormValue("cmd"),
 		key:        r.PostFormValue("key"),
-		remoteUser: r.PostFormValue("remoteUser"), // FIXME this should be re-evaluated as a daemon config option
+		remoteUser: r.PostFormValue("remoteUser"),
 		userIP:     r.PostFormValue("userIP"),
 	}
 
@@ -42,9 +43,8 @@ func sshCertHandler(w http.ResponseWriter, r *http.Request, conf *config) {
 	fp := ssh.FingerprintLegacyMD5(pk)
 
 	// Check for the client certificate
-	var user string
 	if len(r.TLS.PeerCertificates) > 0 {
-		user = r.TLS.PeerCertificates[0].Subject.CommonName
+		p.user = r.TLS.PeerCertificates[0].Subject.CommonName
 	} else {
 		log.Printf("Invalid client certificate")
 		http.Error(w, "Invalid client certificate", http.StatusBadRequest)
@@ -54,15 +54,23 @@ func sshCertHandler(w http.ResponseWriter, r *http.Request, conf *config) {
 	// Generate our key_id for the certificate
 	//keyID := fmt.Sprintf("user[%s] from[%s] command[%s] sshKey[%s] ca[%s] valid to[%s]",
 	keyID := fmt.Sprintf("user[%s] from[%s] command[%s] sshKey[%s] valid to[%s]",
-		user, p.userIP, p.cmd, fp, vb.Format(time.RFC3339))
+		p.user, p.userIP, p.cmd, fp, vb.Format(time.RFC3339))
 
 	// Log the request
 	log.Printf("SSH request: %s", keyID)
 
-	// Make sure we have everything we need from our parameters
-	err = validateHTTPParams(p, conf)
+	// Check if user is authorized for this principal
+	err = unixgroup(conf, p.user, p.remoteUser)
 	if err != nil {
-		errMsg := fmt.Sprintf("Param validation failure: %v", err)
+		log.Printf("Authorization failure: %v", err)
+		http.Error(w, "Not authorized", http.StatusUnauthorized)
+		return
+	}
+
+	// Make sure we have everything we need from our parameters
+	err = validateHTTPParams(conf, p)
+	if err != nil {
+		errMsg := fmt.Sprintf("validation failure: %v", err)
 		log.Printf(errMsg)
 		http.Error(w, errMsg, http.StatusBadRequest)
 		return
@@ -98,7 +106,7 @@ func sshCertHandler(w http.ResponseWriter, r *http.Request, conf *config) {
 	w.Write(authorizedKey)
 }
 
-func validateHTTPParams(p httpParams, conf *config) error {
+func validateHTTPParams(conf *config, p httpParams) error {
 	if conf.ForceCmd && p.cmd == "" {
 		err := fmt.Errorf("cmd missing from request")
 		return err
@@ -118,6 +126,10 @@ func validateHTTPParams(p httpParams, conf *config) error {
 	if conf.RequireClientIP && !validIP(p.userIP) {
 		err := fmt.Errorf("invalid userIP")
 		log.Printf("invalid userIP: |%s|", p.userIP) // FIXME This should be re-evaluated in the logging refactor
+		return err
+	}
+	if p.user == "" {
+		err := fmt.Errorf("empty username not permitted")
 		return err
 	}
 

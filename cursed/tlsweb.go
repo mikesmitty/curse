@@ -111,10 +111,7 @@ func tlsCertHandler(w http.ResponseWriter, r *http.Request, conf *config) {
 }
 
 func validateTLSParams(p tlsParams, conf *config) error {
-	if p.bastionUser == "" {
-		err := fmt.Errorf("%s missing from request", conf.UserHeader)
-		return err
-	} else if !conf.userRegex.MatchString(p.bastionUser) {
+	if !conf.userRegex.MatchString(p.bastionUser) {
 		err := fmt.Errorf("username is invalid")
 		return err
 	}

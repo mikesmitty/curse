@@ -37,3 +37,32 @@ func pwauth(conf *config, user, pass string) (bool, error) {
 
 	return true, nil
 }
+
+func unixgroup(conf *config, user, principal string) error {
+	// If this is a wildcard ACL, allow immediately
+	groups := conf.principalMap[principal]
+	if groups == "*" {
+		return nil
+	} else if groups == "" {
+		return fmt.Errorf("Unknown principal: %s", principal)
+	}
+
+	// Build our timeout context
+	ctx, cancel := context.WithTimeout(context.Background(), conf.authTimeout)
+	defer cancel()
+
+	// Build our command with context for timeout
+	cmd := exec.CommandContext(ctx, conf.Unixgroup)
+
+	// Set our env variables
+	cmd.Env = append(cmd.Env, fmt.Sprintf("USER=%s", user))
+	cmd.Env = append(cmd.Env, fmt.Sprintf("GROUP=%s", groups))
+
+	// Run unixgroup
+	err := cmd.Run()
+	if err != nil {
+		return fmt.Errorf("Invalid groups or unixgroup command error: (user: %s) %v", user, err)
+	}
+
+	return nil
+}

@@ -23,34 +23,36 @@ type config struct {
 	dur              time.Duration
 	exts             map[string]string
 	keyLifeSpan      time.Duration
+	principalMap     map[string]string
 	sshCASigner      ssh.Signer
 	tlsDur           time.Duration
 	tlsCACert        *x509.Certificate
 	tlsCAKey         *ecdsa.PrivateKey
 	userRegex        *regexp.Regexp
 
-	Addr            string
-	AuthPort        int
-	CAKeyFile       string
-	CertPort        int
-	DBFile          string
-	Duration        int
-	Extensions      []string
-	ForceCmd        bool
-	MaxKeyAge       int
-	RequireClientIP bool
-	Pwauth          string
-	PwauthTimeout   int
-	SSLAuthCert     string
-	SSLAuthKey      string
-	SSLCA           string
-	SSLCADuration   int
-	SSLCert         string
-	SSLCertHostname string
-	SSLKey          string
-	SSLKeyCurve     string
-	SSLDuration     int
-	UserHeader      string
+	Addr             string
+	AuthPort         int
+	AuthTimeout      int
+	CAKeyFile        string
+	CertPort         int
+	DBFile           string
+	Duration         int
+	Extensions       []string
+	ForceCmd         bool
+	MaxKeyAge        int
+	PrincipalAliases string
+	Pwauth           string
+	RequireClientIP  bool
+	SSLAuthCert      string
+	SSLAuthKey       string
+	SSLCA            string
+	SSLCADuration    int
+	SSLCert          string
+	SSLCertHostname  string
+	SSLKey           string
+	SSLKeyCurve      string
+	SSLDuration      int
+	Unixgroup        string
 }
 
 func main() {
@@ -78,7 +80,7 @@ func main() {
 	}
 
 	// Convert our auth command timeout to a duration
-	conf.authTimeout = time.Duration(conf.PwauthTimeout) * time.Second
+	conf.authTimeout = time.Duration(conf.AuthTimeout) * time.Second
 
 	// Load the CA key into an ssh.Signer
 	conf.sshCASigner, err = loadSSHCAKey(conf.CAKeyFile)
@@ -124,7 +126,7 @@ func main() {
 		}
 
 		// Start our listener service
-		log.Printf("Starting HTTPS server on %s", addrPort)
+		log.Printf("Starting HTTPS auth server on %s", addrPort)
 		err = server.ListenAndServeTLS(conf.SSLAuthCert, conf.SSLAuthKey)
 		if err != nil {
 			log.Fatalf("Listener service: %v", err)
@@ -152,7 +154,7 @@ func main() {
 	}
 
 	// Start our listener service
-	log.Printf("Starting HTTPS server on %s", addrPort)
+	log.Printf("Starting HTTPS cert server on %s", addrPort)
 	err = server.ListenAndServeTLS(conf.SSLCert, conf.SSLKey)
 	if err != nil {
 		log.Fatalf("Listener service: %v", err)
@@ -177,6 +179,7 @@ func init() {
 
 	viper.SetDefault("addr", "127.0.0.1")
 	viper.SetDefault("authport", 443)
+	viper.SetDefault("authtimeout", 30) // 30 second default
 	viper.SetDefault("cakeyfile", "/opt/curse/etc/user_ca")
 	viper.SetDefault("certport", 444)
 	viper.SetDefault("dbfile", "/opt/curse/etc/cursed.db")
@@ -184,8 +187,8 @@ func init() {
 	viper.SetDefault("extensions", []string{"permit-pty"})
 	viper.SetDefault("forcecmd", false)
 	viper.SetDefault("maxkeyage", 90) // 90 day default
+	viper.SetDefault("principalaliases", "/opt/curse/etc/aliases.conf")
 	viper.SetDefault("pwauth", "/usr/bin/pwauth")
-	viper.SetDefault("pwauthtimeout", 30) // 30 second default
 	viper.SetDefault("requireclientip", true)
 	viper.SetDefault("sslauthcert", "/opt/curse/etc/cursed.crt")
 	viper.SetDefault("sslauthkey", "/opt/curse/etc/cursed.key")
@@ -196,6 +199,7 @@ func init() {
 	viper.SetDefault("sslkey", "/opt/curse/etc/cursed.key")
 	viper.SetDefault("sslkeycurve", "p384")
 	viper.SetDefault("sslduration", 12*60) // 12 hour default
+	viper.SetDefault("unixgroup", "/opt/curse/sbin/unixgroup")
 }
 
 func validateExtensions(confExts []string) (map[string]string, []error) {
@@ -251,6 +255,12 @@ func getConf() (*config, error) {
 		for _, err := range errSlice {
 			log.Printf("%v", err)
 		}
+	}
+
+	// Load principal aliases file
+	conf.principalMap, err = loadPrincipalMap(conf)
+	if err != nil {
+		return nil, err
 	}
 
 	// Compile our user-matching regex (usernames are limited to 32 characters, must start
