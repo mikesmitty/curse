@@ -2,8 +2,7 @@
 #addr: 127.0.0.1
 
 ## Port to listen on (should be a privileged port < 1024 for security)
-#authport: 443
-#certport: 444
+#port: 444
 
 ## Location of the SSH CA key
 #cakeyfile: /opt/curse/etc/user_ca
@@ -25,6 +24,9 @@
 ## Saves the command to be run in the certificate, permitting only that one command
 #forcecmd: false
 
+## If a pubkey's age can't be verified, reject the request
+#keyagecritical: true
+
 ## Maximum age of a user's SSH keypair for lifecycling
 ## Set to -1 to disable key cycling
 #maxkeyage: 90
@@ -41,10 +43,6 @@ pwauth: /usr/bin/pwauth
 
 ## Require client IP to be sent with ssh cert requests (as set by ssh in the SSH_CLIENT and SSH_CONNECTION environment variables)
 #requireclientip: true
-
-## SSL key and cert for auth service (by default these are pinned to the cert service CA in jinx)
-#sslauthcert: /opt/curse/etc/cursed.crt
-#sslauthkey: /opt/curse/etc/cursed.key
 
 ## SSL key and cert for cursed service
 #sslca: /opt/curse/etc/cursed.crt

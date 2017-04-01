@@ -19,6 +19,13 @@ type httpParams struct {
 }
 
 func sshCertHandler(w http.ResponseWriter, r *http.Request, conf *config) {
+	// Verify the client certificate
+	if len(r.TLS.VerifiedChains) == 0 {
+		log.Printf("no valid client certificate provided")
+		http.Error(w, "Not authorized", http.StatusUnauthorized)
+		return
+	}
+
 	// Load our form parameters into a struct
 	p := httpParams{
 		bastionIP:  r.PostFormValue("bastionIP"),
@@ -35,26 +42,19 @@ func sshCertHandler(w http.ResponseWriter, r *http.Request, conf *config) {
 	// Generate a fingerprint of the received public key for our key_id string
 	pk, _, _, _, err := ssh.ParseAuthorizedKey([]byte(p.key))
 	if err != nil {
-		log.Printf("Unable to parse authorized key |%s|", p.key)
+		log.Printf("unable to parse authorized key |%s|", p.key)
 		http.Error(w, "Unable to parse authorized key", http.StatusBadRequest)
 		return
 	}
 	// Using md5 because that's what ssh-keygen prints out, making searches for a particular key easier
 	fp := ssh.FingerprintLegacyMD5(pk)
 
-	// Check for the client certificate
-	if len(r.TLS.PeerCertificates) > 0 {
-		p.user = r.TLS.PeerCertificates[0].Subject.CommonName
-	} else {
-		log.Printf("Invalid client certificate")
-		http.Error(w, "Invalid client certificate", http.StatusBadRequest)
-		return
-	}
+	// Get the client certificate CN
+	p.user = r.TLS.PeerCertificates[0].Subject.CommonName
 
 	// Generate our key_id for the certificate
-	//keyID := fmt.Sprintf("user[%s] from[%s] command[%s] sshKey[%s] ca[%s] valid to[%s]",
-	keyID := fmt.Sprintf("user[%s] from[%s] command[%s] sshKey[%s] valid to[%s]",
-		p.user, p.userIP, p.cmd, fp, vb.Format(time.RFC3339))
+	keyID := fmt.Sprintf("user[%s] from[%s] command[%s] sshKey[%s] ca[%s] valid to[%s]",
+		p.user, p.userIP, p.cmd, fp, conf.sshCAFP, vb.Format(time.RFC3339))
 
 	// Log the request
 	log.Printf("SSH request: %s", keyID)
@@ -62,7 +62,7 @@ func sshCertHandler(w http.ResponseWriter, r *http.Request, conf *config) {
 	// Check if user is authorized for this principal
 	err = unixgroup(conf, p.user, p.remoteUser)
 	if err != nil {
-		log.Printf("Authorization failure: %v", err)
+		log.Printf("authorization failure: %v", err)
 		http.Error(w, "Not authorized", http.StatusUnauthorized)
 		return
 	}
@@ -71,7 +71,7 @@ func sshCertHandler(w http.ResponseWriter, r *http.Request, conf *config) {
 	err = validateHTTPParams(conf, p)
 	if err != nil {
 		errMsg := fmt.Sprintf("validation failure: %v", err)
-		log.Printf(errMsg)
+		log.Print(errMsg)
 		http.Error(w, errMsg, http.StatusBadRequest)
 		return
 	}
@@ -79,6 +79,11 @@ func sshCertHandler(w http.ResponseWriter, r *http.Request, conf *config) {
 	// Check if we've seen this pubkey before and if it's too old
 	expired, err := checkPubKeyAge(conf, fp)
 	if expired {
+		if err != nil {
+			log.Printf("pubkey expiration check error - user[%s] pubkey[%s]: %v", p.user, fp, err)
+		} else {
+			log.Printf("pubkey expired: user[%s] pubkey[%s]", p.user, fp)
+		}
 		http.Error(w, "Submitted pubkey is too old. Please generate new key.", http.StatusUnprocessableEntity)
 		return
 	}
@@ -96,7 +101,7 @@ func sshCertHandler(w http.ResponseWriter, r *http.Request, conf *config) {
 	}
 
 	// Sign the public key
-	authorizedKey, err := signPubKey(conf.sshCASigner, []byte(p.key), cc)
+	authorizedKey, err := signPubKey(conf, []byte(p.key), cc)
 	if err != nil {
 		log.Printf("%v", err)
 		http.Error(w, "Server error", http.StatusInternalServerError)

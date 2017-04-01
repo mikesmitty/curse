@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bytes"
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/rand"
@@ -26,14 +25,6 @@ type certOpts struct {
 	NotAfter  time.Time
 	SAN       string
 	Serial    *big.Int
-}
-
-func tlsCompareFP(a, b *x509.Certificate) bool {
-	if bytes.Compare(tlsCertFP(a), tlsCertFP(b)) == 0 {
-		return true
-	}
-
-	return false
 }
 
 func tlsCertFP(c *x509.Certificate) []byte {

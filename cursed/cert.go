@@ -5,10 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
-	"strconv"
 	"time"
-
-	"github.com/boltdb/bolt"
 
 	"golang.org/x/crypto/ssh"
 )
@@ -25,59 +22,24 @@ type certConfig struct {
 }
 
 func checkPubKeyAge(conf *config, fp string) (bool, error) {
-	var keyBirthday int64
 
-	// Check if this fingerprint exists in our DB
-	err := conf.db.View(func(tx *bolt.Tx) error {
-		bucket := tx.Bucket(conf.bucketNameFP)
-		if bucket == nil {
-			msg := "WARNING: Did not find DB bucket %q. This should only happen with a new db file"
-			return fmt.Errorf(msg, conf.bucketNameFP)
-		}
-
-		// Get timestamp string from database and convert to int
-		val := bucket.Get([]byte(fp))
-		if len(val) == 0 {
-			keyBirthday = 0
-			return nil
-		}
-
-		// Convert byte array to string to int64 (gross, I know)
-		kb, err := strconv.ParseInt(string(val), 10, 64)
-		if err != nil {
-			msg := "ERROR: Timestamp in db corrupted for key %s: %v"
-			return fmt.Errorf(msg, fp, err)
-		}
-		keyBirthday = int64(kb)
-
-		return nil
-	})
-	if err != nil {
-		log.Printf("%v", err)
+	// Check our key's age from the DB
+	keyBirthday, ok, err := dbGetPubKeyAge(conf, fp)
+	if !ok && conf.KeyAgeCritical {
+		return true, fmt.Errorf("critical - failed to verify pubkey age: [%s] %v", fp, err)
+	} else if !ok {
+		log.Printf("warning - failed to verify pubkey age: [%s] %v", fp, err)
 	}
 
 	// If this is a new key, add it to the database with a timestamp
 	if keyBirthday == 0 {
-		err = conf.db.Update(func(tx *bolt.Tx) error {
-			bucket, err := tx.CreateBucketIfNotExists(conf.bucketNameFP)
-			if err != nil {
-				return err
-			}
-
-			// Convert unix timestamp to string to byte array and store in the DB (gross, I know)
-			now := strconv.FormatInt(time.Now().Unix(), 10)
-			err = bucket.Put([]byte(fp), []byte(now))
-			if err != nil {
-				return err
-			}
-			return nil
-		})
+		err = dbAddPubKeyBday(conf, fp)
 		if err != nil {
 			return true, err
 		}
 	} else if keyBirthday > 0 {
 		kb := time.Unix(keyBirthday, 0)
-		keyAge := time.Now().Sub(kb)
+		keyAge := time.Since(kb)
 		if keyAge > conf.keyLifeSpan {
 			return true, nil
 		}
@@ -89,27 +51,49 @@ func checkPubKeyAge(conf *config, fp string) (bool, error) {
 	return false, nil
 }
 
-func loadSSHCAKey(keyFile string) (ssh.Signer, error) {
+func loadSSHCA(conf *config) (ssh.Signer, []byte, error) {
 	// Read in our private key PEM file
-	key, err := ioutil.ReadFile(keyFile)
+	key, err := ioutil.ReadFile(conf.CAKeyFile)
 	if err != nil {
 		err = fmt.Errorf("Failed to read CA key file: '%v'", err)
-		return nil, err
+		return nil, nil, err
 	}
 
 	sk, err := ssh.ParsePrivateKey(key)
 	if err != nil {
 		err = fmt.Errorf("Failed to parse CA key: '%v'", err)
-		return nil, err
+		return nil, nil, err
 	}
 
-	return sk, nil
+	// Get our CA fingerprint
+	rawPub, err := ioutil.ReadFile(fmt.Sprintf("%s.pub", conf.CAKeyFile))
+	if err != nil {
+		err = fmt.Errorf("Failed to read CA pubkey file: '%v'", err)
+		return nil, nil, err
+	}
+
+	// Parse the pubkey
+	pubKey, _, _, _, err := ssh.ParseAuthorizedKey(rawPub)
+	if err != nil {
+		err = fmt.Errorf("Failed to parse CA pubkey: %v", err)
+		return nil, nil, err
+	}
+
+	// Get the key's fingerprint for logging
+	fp := ssh.FingerprintSHA256(pubKey)
+
+	return sk, []byte(fp), nil
 }
 
-func signPubKey(signer ssh.Signer, rawKey []byte, cc certConfig) ([]byte, error) {
+func signPubKey(conf *config, rawKey []byte, cc certConfig) ([]byte, error) {
 	pubKey, _, _, _, err := ssh.ParseAuthorizedKey(rawKey) // FIXME look into handling additional fields
 	if err != nil {
-		err = fmt.Errorf("Failed to parse pubkey: %v", err)
+		return nil, fmt.Errorf("Failed to parse pubkey: %v", err)
+	}
+
+	// Get/update our ssh cert serial number
+	serial, err := dbIncSSHSerial(conf)
+	if err != nil {
 		return nil, err
 	}
 
@@ -127,7 +111,7 @@ func signPubKey(signer ssh.Signer, rawKey []byte, cc certConfig) ([]byte, error)
 	// Make a cert from our pubkey
 	cert := &ssh.Certificate{
 		Key:             pubKey,
-		Serial:          0,
+		Serial:          serial,
 		CertType:        cc.certType,
 		KeyId:           cc.keyID,
 		ValidPrincipals: cc.principals,
@@ -136,7 +120,7 @@ func signPubKey(signer ssh.Signer, rawKey []byte, cc certConfig) ([]byte, error)
 		Permissions:     perms,
 	}
 
-	err = cert.SignCert(rand.Reader, signer)
+	err = cert.SignCert(rand.Reader, conf.sshCASigner)
 	if err != nil {
 		err = fmt.Errorf("Failed to sign pubkey: %v", err)
 		return nil, err
