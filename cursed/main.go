@@ -16,35 +16,35 @@ import (
 )
 
 type config struct {
-	authTimeout      time.Duration
-	bucketNameFP     []byte
-	bucketNameSerial []byte
-	db               *bolt.DB
-	dur              time.Duration
-	exts             map[string]string
-	keyLifeSpan      time.Duration
-	principalMap     map[string]string
-	sshCASigner      ssh.Signer
-	tlsDur           time.Duration
-	tlsCACert        *x509.Certificate
-	tlsCAKey         *ecdsa.PrivateKey
-	userRegex        *regexp.Regexp
+	authTimeout         time.Duration
+	bucketNameFP        []byte
+	bucketNameSSHSerial []byte
+	bucketNameTLSSerial []byte
+	db                  *bolt.DB
+	dur                 time.Duration
+	exts                map[string]string
+	keyLifeSpan         time.Duration
+	principalMap        map[string]string
+	sshCAFP             []byte
+	sshCASigner         ssh.Signer
+	tlsDur              time.Duration
+	tlsCACert           *x509.Certificate
+	tlsCAKey            *ecdsa.PrivateKey
+	userRegex           *regexp.Regexp
 
 	Addr             string
-	AuthPort         int
 	AuthTimeout      int
 	CAKeyFile        string
-	CertPort         int
 	DBFile           string
 	Duration         int
 	Extensions       []string
 	ForceCmd         bool
+	KeyAgeCritical   bool
 	MaxKeyAge        int
+	Port             int
 	PrincipalAliases string
 	Pwauth           string
 	RequireClientIP  bool
-	SSLAuthCert      string
-	SSLAuthKey       string
 	SSLCA            string
 	SSLCADuration    int
 	SSLCert          string
@@ -83,7 +83,7 @@ func main() {
 	conf.authTimeout = time.Duration(conf.AuthTimeout) * time.Second
 
 	// Load the CA key into an ssh.Signer
-	conf.sshCASigner, err = loadSSHCAKey(conf.CAKeyFile)
+	conf.sshCASigner, conf.sshCAFP, err = loadSSHCA(conf)
 	if err != nil {
 		log.Fatalf("%v", err)
 	}
@@ -95,6 +95,12 @@ func main() {
 	}
 	defer conf.db.Close()
 
+	// Initialize/check the PubKey lifecycle database
+	err = dbInitPubKeyBucket(conf)
+	if err != nil {
+		log.Fatalf("Could not open database file %v", err)
+	}
+
 	// Check TLS certs
 	ok, err := initTLSCerts(conf)
 	if !ok {
@@ -105,51 +111,27 @@ func main() {
 	}
 
 	// Start auth service
-	go func() {
-		authServer := http.NewServeMux()
-
-		// Set our auth service web handler
-		authServer.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-			tlsCertHandler(w, r, conf)
-		})
-
-		// Prepare our TLS settings
-		addrPort := fmt.Sprintf("%s:%d", conf.Addr, conf.AuthPort)
-		tlsConf, err := getAuthTLSConfig(conf)
-		if err != nil {
-			log.Fatal(err)
-		}
-		server := &http.Server{
-			Addr:      addrPort,
-			Handler:   authServer,
-			TLSConfig: tlsConf,
-		}
-
-		// Start our listener service
-		log.Printf("Starting HTTPS auth server on %s", addrPort)
-		err = server.ListenAndServeTLS(conf.SSLAuthCert, conf.SSLAuthKey)
-		if err != nil {
-			log.Fatalf("Listener service: %v", err)
-		}
-	}()
-
-	// Start our cert signing service
-	certServer := http.NewServeMux()
+	s := http.NewServeMux()
 
 	// Set our cert service web handler
-	certServer.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+	s.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		sshCertHandler(w, r, conf)
 	})
 
+	// Set our auth service web handler
+	s.HandleFunc("/auth/", func(w http.ResponseWriter, r *http.Request) {
+		tlsCertHandler(w, r, conf)
+	})
+
 	// Prepare our TLS settings
-	addrPort := fmt.Sprintf("%s:%d", conf.Addr, conf.CertPort)
-	tlsConf, err := getCertTLSConfig(conf)
+	addrPort := fmt.Sprintf("%s:%d", conf.Addr, conf.Port) // FIXME update config options if this becomes permanent
+	tlsConf, err := getTLSConfig(conf)
 	if err != nil {
 		log.Fatal(err)
 	}
 	server := &http.Server{
 		Addr:      addrPort,
-		Handler:   certServer,
+		Handler:   s,
 		TLSConfig: tlsConf,
 	}
 
@@ -178,20 +160,18 @@ func init() {
 	}
 
 	viper.SetDefault("addr", "127.0.0.1")
-	viper.SetDefault("authport", 443)
 	viper.SetDefault("authtimeout", 30) // 30 second default
 	viper.SetDefault("cakeyfile", "/opt/curse/etc/user_ca")
-	viper.SetDefault("certport", 444)
 	viper.SetDefault("dbfile", "/opt/curse/etc/cursed.db")
 	viper.SetDefault("duration", 2*60) // 2 minute default
 	viper.SetDefault("extensions", []string{"permit-pty"})
 	viper.SetDefault("forcecmd", false)
+	viper.SetDefault("keyagecritical", false)
 	viper.SetDefault("maxkeyage", 90) // 90 day default
+	viper.SetDefault("port", 443)
 	viper.SetDefault("principalaliases", "/opt/curse/etc/aliases.conf")
 	viper.SetDefault("pwauth", "/usr/bin/pwauth")
 	viper.SetDefault("requireclientip", true)
-	viper.SetDefault("sslauthcert", "/opt/curse/etc/cursed.crt")
-	viper.SetDefault("sslauthkey", "/opt/curse/etc/cursed.key")
 	viper.SetDefault("sslca", "/opt/curse/etc/cursed.crt")
 	viper.SetDefault("sslcaduration", 730) // 2 year default
 	viper.SetDefault("sslcert", "/opt/curse/etc/cursed.crt")
@@ -238,7 +218,8 @@ func getConf() (*config, error) {
 	}
 	// Hardcoding the DB bucket name
 	conf.bucketNameFP = []byte("pubkeybirthdays")
-	conf.bucketNameSerial = []byte("certserial")
+	conf.bucketNameSSHSerial = []byte("sshserial")
+	conf.bucketNameTLSSerial = []byte("certserial")
 
 	// Require TLS mutual authentication for security
 	if conf.SSLCA == "" || conf.SSLKey == "" || conf.SSLCert == "" {

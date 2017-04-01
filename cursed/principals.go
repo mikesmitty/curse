@@ -42,7 +42,7 @@ Line:
 		// Check for wildcard groups
 		for _, v := range groups {
 			// If we got a wildcard, ignore everything else
-			if bytes.Compare(v, []byte{'*'}) == 0 {
+			if bytes.Equal(v, []byte{'*'}) {
 				principalMap[prin] = "*"
 				continue Line
 			}

@@ -42,7 +42,7 @@ func tlsCertHandler(w http.ResponseWriter, r *http.Request, conf *config) {
 	err = validateTLSParams(p, conf)
 	if err != nil {
 		errMsg := fmt.Sprintf("Param validation failure: %v", err)
-		log.Printf(errMsg)
+		log.Print(errMsg)
 		http.Error(w, errMsg, http.StatusBadRequest)
 		return
 	}
@@ -51,7 +51,7 @@ func tlsCertHandler(w http.ResponseWriter, r *http.Request, conf *config) {
 	csrBlock, _ := pem.Decode([]byte(p.csr))
 	if csrBlock == nil {
 		errMsg := fmt.Sprintf("Failed to decode CSR: '%v'", err)
-		log.Printf(errMsg)
+		log.Print(errMsg)
 		http.Error(w, errMsg, http.StatusBadRequest)
 		return
 	}
@@ -60,7 +60,7 @@ func tlsCertHandler(w http.ResponseWriter, r *http.Request, conf *config) {
 	csr, err := x509.ParseCertificateRequest(csrBlock.Bytes)
 	if err != nil {
 		errMsg := fmt.Sprintf("Failed to parse CSR: %v", err)
-		log.Printf(errMsg)
+		log.Print(errMsg)
 		http.Error(w, errMsg, http.StatusBadRequest)
 		return
 	}
@@ -69,7 +69,7 @@ func tlsCertHandler(w http.ResponseWriter, r *http.Request, conf *config) {
 	err = csr.CheckSignature()
 	if err != nil {
 		errMsg := fmt.Sprintf("Failed to check CSR signature: %v", err)
-		log.Printf(errMsg)
+		log.Print(errMsg)
 		http.Error(w, errMsg, http.StatusBadRequest)
 		return
 	}
@@ -77,7 +77,7 @@ func tlsCertHandler(w http.ResponseWriter, r *http.Request, conf *config) {
 	// Check if our username received matches the CSR name
 	if csr.Subject.CommonName != p.bastionUser {
 		errMsg := fmt.Sprintf("CSR CommonName field does not match logged-in user, denying request")
-		log.Printf(errMsg)
+		log.Print(errMsg)
 		http.Error(w, errMsg, http.StatusBadRequest)
 		return
 	}

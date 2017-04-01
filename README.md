@@ -49,7 +49,7 @@ Run the curse post-install setup script
 
     $ sudo bash /opt/curse/sbin/setup.sh
 
-This will output your CA public key to be added to destination servers, and helpful nginx setup commands.
+This will output your CA public key to be added to destination servers, and setup the curse daemon for running.
 
 If all went well you should now be able to request certificates:
 
@@ -67,7 +67,7 @@ Netflix recommends generating several CA keypairs and storing the private keys o
 
 **CentOS 7**
 
-First, install nginx, then curse and jinx:
+First, install pwauth, curse, and jinx:
 
     $ sudo rpm --import https://mirror.go-repo.io/curse/centos/RPM-GPG-KEY-GO-REPO
     $ sudo curl -s https://mirror.go-repo.io/curse/centos/curse-repo.repo | tee /etc/yum.repos.d/curse-repo.repo
@@ -77,7 +77,7 @@ Run the curse post-install setup script
 
     $ sudo bash /opt/curse/sbin/setup.sh
 
-This will output your CA public key to be added to destination servers, and helpful nginx setup commands.
+This will output your CA public key to be added to destination servers, and setup the curse daemon for running.
 
 If all went well you should now be able to request certificates:
 

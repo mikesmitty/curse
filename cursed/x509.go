@@ -56,12 +56,7 @@ func genTLSCACert(conf *config) error {
 	}
 
 	// Update our CA's serial index
-	err = setDBSerial(conf, serial)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return dbSetTLSSerial(conf, serial)
 }
 
 func signTLSClientCert(conf *config, csr *x509.CertificateRequest) ([]byte, []byte, error) {
@@ -70,7 +65,7 @@ func signTLSClientCert(conf *config, csr *x509.CertificateRequest) ([]byte, []by
 	notAfter := notBefore.Add(time.Duration(conf.SSLDuration) * time.Minute)
 
 	// Get the next available serial number
-	serial, err := incDBSerial(conf)
+	serial, err := dbIncTLSSerial(conf)
 	if err != nil {
 		return nil, nil, fmt.Errorf("Failed to generate client certficate: %v", err)
 	}
@@ -111,7 +106,7 @@ func initTLSCerts(conf *config) (bool, error) {
 		return false, fmt.Errorf("Error initializing CA certificate: sslcert exists, but sslkey does not")
 	}
 
-	if _, err := os.Stat(conf.SSLCA); os.IsNotExist(err) {
+	if _, err = os.Stat(conf.SSLCA); os.IsNotExist(err) {
 		conf.SSLCA = conf.SSLCert
 		return true, fmt.Errorf("Discrete CA cert not supported with automatic cert generation. Using sslcert file as CA cert: %s", conf.SSLCert)
 	}
