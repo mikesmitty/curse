@@ -62,7 +62,7 @@ func genTLSCACert(conf *config) error {
 func signTLSClientCert(conf *config, csr *x509.CertificateRequest) ([]byte, []byte, error) {
 	// Set our cert validity constraints
 	notBefore := time.Now()
-	notAfter := notBefore.Add(time.Duration(conf.SSLDuration) * time.Minute)
+	notAfter := notBefore.Add(conf.tlsDur)
 
 	// Get the next available serial number
 	serial, err := dbIncTLSSerial(conf)
