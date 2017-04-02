@@ -180,7 +180,7 @@ func init() {
 	viper.SetDefault("keyagecritical", false)
 	viper.SetDefault("logtimestamp", false)
 	viper.SetDefault("maxkeyage", 90) // 90 day default
-	viper.SetDefault("port", 443)
+	viper.SetDefault("port", 444)
 	viper.SetDefault("principalaliases", "/opt/curse/etc/aliases.conf")
 	viper.SetDefault("pwauth", "/usr/bin/pwauth")
 	viper.SetDefault("requireclientip", true)
