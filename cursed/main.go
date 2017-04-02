@@ -39,6 +39,7 @@ type config struct {
 	Duration         int
 	Extensions       []string
 	ForceCmd         bool
+	ForceUserMatch   bool
 	KeyAgeCritical   bool
 	LogTimestamp     bool
 	MaxKeyAge        int
@@ -175,6 +176,7 @@ func init() {
 	viper.SetDefault("duration", 2*60) // 2 minute default
 	viper.SetDefault("extensions", []string{"permit-pty"})
 	viper.SetDefault("forcecmd", false)
+	viper.SetDefault("forceusermatch", true)
 	viper.SetDefault("keyagecritical", false)
 	viper.SetDefault("logtimestamp", false)
 	viper.SetDefault("maxkeyage", 90) // 90 day default

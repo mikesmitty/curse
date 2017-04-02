@@ -24,6 +24,9 @@
 ## Saves the command to be run in the certificate, permitting only that one command
 #forcecmd: false
 
+## Disallow users to log in as another username
+#forceusermatch: true
+
 ## If a pubkey's age can't be verified, reject the request
 #keyagecritical: true
 

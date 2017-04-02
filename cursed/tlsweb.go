@@ -98,7 +98,7 @@ func tlsCertHandler(w http.ResponseWriter, r *http.Request, conf *config) {
 	}
 
 	// Check if our username received matches the CSR name
-	if csr.Subject.CommonName != p.BastionUser {
+	if conf.ForceUserMatch && csr.Subject.CommonName != p.BastionUser {
 		msg := "csr commonname field does not match logged-in user, denying request"
 		code := http.StatusBadRequest
 		logger.req(un, code, msg)
