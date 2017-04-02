@@ -10,12 +10,12 @@ import (
 func getTLSConfig(conf *config) (*tls.Config, error) {
 	tlsCACert, err := ioutil.ReadFile(conf.SSLCA)
 	if err != nil {
-		return nil, fmt.Errorf("Could not read sslca certificate: %v", err)
+		return nil, fmt.Errorf("could not read sslca certificate: %v", err)
 	}
 
 	certPool := x509.NewCertPool()
 	if ok := certPool.AppendCertsFromPEM(tlsCACert); !ok {
-		return nil, fmt.Errorf("Could not import sslca certificate: %v", err)
+		return nil, fmt.Errorf("could not import sslca certificate: %v", err)
 	}
 
 	// Set our TLS config

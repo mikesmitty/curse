@@ -27,6 +27,9 @@
 ## If a pubkey's age can't be verified, reject the request
 #keyagecritical: true
 
+## Include timestamps in log output (for when not using systemd logging)
+#logtimestamp: false
+
 ## Maximum age of a user's SSH keypair for lifecycling
 ## Set to -1 to disable key cycling
 #maxkeyage: 90
@@ -43,6 +46,9 @@ pwauth: /usr/bin/pwauth
 
 ## Require client IP to be sent with ssh cert requests (as set by ssh in the SSH_CLIENT and SSH_CONNECTION environment variables)
 #requireclientip: true
+
+## Enable ssh certificate serial numbers
+#sshserial: false
 
 ## SSL key and cert for cursed service
 #sslca: /opt/curse/etc/cursed.crt

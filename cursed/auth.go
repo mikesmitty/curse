@@ -16,18 +16,18 @@ func pwauth(conf *config, user, pass string) (bool, error) {
 	cmd := exec.CommandContext(ctx, conf.Pwauth)
 	stdin, err := cmd.StdinPipe()
 	if err != nil {
-		return false, fmt.Errorf("Failed to open stdin to pwauth: %v", err)
+		return false, fmt.Errorf("failed to open stdin to pwauth: %v", err)
 	}
 
 	// Run pwauth
 	err = cmd.Start()
 	if err != nil {
-		return false, fmt.Errorf("Failed to start pwauth: %v", err)
+		return false, fmt.Errorf("failed to start pwauth: %v", err)
 	}
 	// Send the user/pass over stdin
 	_, err = io.WriteString(stdin, fmt.Sprintf("%s\n%s\n", user, pass))
 	if err != nil {
-		return false, fmt.Errorf("Failed to pass username/password to pwauth: %v", err)
+		return false, fmt.Errorf("failed to pass username/password to pwauth: %v", err)
 	}
 	// Wait for pwauth to complete
 	err = cmd.Wait()
@@ -44,7 +44,7 @@ func unixgroup(conf *config, user, principal string) error {
 	if groups == "*" {
 		return nil
 	} else if groups == "" {
-		return fmt.Errorf("Unknown principal: %s", principal)
+		return fmt.Errorf("unknown principal: %s", principal)
 	}
 
 	// Build our timeout context
@@ -61,7 +61,7 @@ func unixgroup(conf *config, user, principal string) error {
 	// Run unixgroup
 	err := cmd.Run()
 	if err != nil {
-		return fmt.Errorf("Invalid groups or unixgroup command error: (user: %s) %v", user, err)
+		return fmt.Errorf("invalid groups or unixgroup command error: (user: %s) %v", user, err)
 	}
 
 	return nil

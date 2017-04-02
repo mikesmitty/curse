@@ -42,14 +42,14 @@ func getConf() (*config, error) {
 	var conf config
 	err := viper.Unmarshal(&conf)
 	if err != nil {
-		return nil, fmt.Errorf("Unable to process config: %v", err)
+		return nil, fmt.Errorf("unable to process config: %v", err)
 	}
 
 	// Verify config options
 	if conf.BastionIP == "" {
 		conf.BastionIP, _ = getBastionIP()
 		if conf.BastionIP == "" {
-			return nil, fmt.Errorf("Could not find server's public IP. bastionip field required")
+			return nil, fmt.Errorf("could not find server's public ip. bastionip field required")
 		}
 	}
 	if conf.PubKey == "" {
@@ -74,7 +74,7 @@ func getConf() (*config, error) {
 	}
 	conf.privKeyFile = r.ReplaceAllString(conf.pubKeyFile, "")
 	if conf.privKeyFile == conf.pubKeyFile {
-		return nil, fmt.Errorf("Invalid public key name (must end in .pub): %s", conf.pubKeyFile)
+		return nil, fmt.Errorf("invalid public key name (must end in .pub): %s", conf.pubKeyFile)
 	}
 
 	// Check for non-SSL URL configuration (for warning)
@@ -94,7 +94,7 @@ func getConf() (*config, error) {
 		conf.userIP = scs[0]
 	}
 	if conf.userIP == "" {
-		conf.userIP = "IP missing"
+		conf.userIP = "ip missing"
 	}
 
 	return &conf, nil

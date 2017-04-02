@@ -26,17 +26,17 @@ func getPubKey(conf *config) ([]byte, error) {
 	// Check if our keys exist, otherwise generate it
 	if conf.AutoGenKeys {
 		if _, err := os.Stat(conf.privKeyFile); os.IsNotExist(err) {
-			fmt.Fprintf(os.Stderr, "Configured SSH private key missing (%s), generating new key pair.\n", conf.privKeyFile)
+			fmt.Fprintf(os.Stderr, "configured ssh private key missing (%s), generating new key pair.\n", conf.privKeyFile)
 			err = saveNewKeyPair(conf)
 			if err != nil {
-				return nil, fmt.Errorf("Failed to generate key pair: %v", err)
+				return nil, fmt.Errorf("failed to generate key pair: %v", err)
 			}
 		}
 		if _, err := os.Stat(conf.pubKeyFile); os.IsNotExist(err) {
-			fmt.Fprintf(os.Stderr, "Configured SSH public key missing (%s), generating new key pair.\n", conf.pubKeyFile)
+			fmt.Fprintf(os.Stderr, "configured ssh public key missing (%s), generating new key pair.\n", conf.pubKeyFile)
 			err = saveNewKeyPair(conf)
 			if err != nil {
-				return nil, fmt.Errorf("Failed to generate key pair: %v", err)
+				return nil, fmt.Errorf("failed to generate key pair: %v", err)
 			}
 		}
 	}
@@ -44,7 +44,7 @@ func getPubKey(conf *config) ([]byte, error) {
 	// Read in our specified pubkey file
 	pubKey, err = ioutil.ReadFile(conf.pubKeyFile)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to read PubKey file: %v", err)
+		return nil, fmt.Errorf("failed to read pubkey file: %v", err)
 	}
 
 	return pubKey, nil
@@ -62,11 +62,11 @@ func genKeyPair(conf *config) ([]byte, []byte, error) {
 		// Generate our private and public keys
 		pubKey, privateKey, err := ed25519.GenerateKey(rand.Reader)
 		if err != nil {
-			return nil, nil, fmt.Errorf("Unable to generate ed25519 private key: %v", err)
+			return nil, nil, fmt.Errorf("unable to generate ed25519 private key: %v", err)
 		}
 		publicKey, err := ssh.NewPublicKey(pubKey)
 		if err != nil {
-			return nil, nil, fmt.Errorf("Unable to convert ed25519 pubkey format: %v", err)
+			return nil, nil, fmt.Errorf("unable to convert ed25519 pubkey format: %v", err)
 		}
 
 		// Convert to a writable format
@@ -87,10 +87,10 @@ func genKeyPair(conf *config) ([]byte, []byte, error) {
 		} else if conf.KeyGenBitSize == 521 {
 			privateKey, err = ecdsa.GenerateKey(elliptic.P521(), rand.Reader)
 		} else {
-			return nil, nil, fmt.Errorf("Invalid keygenbitsize for ecdsa: %d", conf.KeyGenBitSize)
+			return nil, nil, fmt.Errorf("invalid keygenbitsize for ecdsa: %d", conf.KeyGenBitSize)
 		}
 		if err != nil {
-			return nil, nil, fmt.Errorf("Unable to generate ecdsa private key: %v", err)
+			return nil, nil, fmt.Errorf("unable to generate ecdsa private key: %v", err)
 		}
 		pubKey, ok := privateKey.Public().(*ecdsa.PublicKey)
 		if !ok {
@@ -98,13 +98,13 @@ func genKeyPair(conf *config) ([]byte, []byte, error) {
 		}
 		publicKey, err := ssh.NewPublicKey(pubKey)
 		if err != nil {
-			return nil, nil, fmt.Errorf("Unable to convert ecdsa pubkey format: %v", err)
+			return nil, nil, fmt.Errorf("unable to convert ecdsa pubkey format: %v", err)
 		}
 
 		// Convert to a writable format
 		ecBytes, err := x509.MarshalECPrivateKey(privateKey)
 		if err != nil {
-			return nil, nil, fmt.Errorf("Unable to convert ecdsa private key format: %v", err)
+			return nil, nil, fmt.Errorf("unable to convert ecdsa private key format: %v", err)
 		}
 		pemKey := &pem.Block{
 			Type:  "EC PARAMETERS",
@@ -116,7 +116,7 @@ func genKeyPair(conf *config) ([]byte, []byte, error) {
 		// Generate our private and public keys
 		privateKey, err := rsa.GenerateKey(rand.Reader, conf.KeyGenBitSize)
 		if err != nil {
-			return nil, nil, fmt.Errorf("Unable to generate rsa private key: %v", err)
+			return nil, nil, fmt.Errorf("unable to generate rsa private key: %v", err)
 		}
 		pubKey, ok := privateKey.Public().(*rsa.PublicKey)
 		if !ok {
@@ -124,7 +124,7 @@ func genKeyPair(conf *config) ([]byte, []byte, error) {
 		}
 		publicKey, err := ssh.NewPublicKey(pubKey)
 		if err != nil {
-			return nil, nil, fmt.Errorf("Unable to convert rsa pubkey format: %v", err)
+			return nil, nil, fmt.Errorf("unable to convert rsa pubkey format: %v", err)
 		}
 
 		// Convert to a writable format
@@ -135,7 +135,7 @@ func genKeyPair(conf *config) ([]byte, []byte, error) {
 		privateKeyPEM = pem.EncodeToMemory(pemKey)
 		authorizedKey = ssh.MarshalAuthorizedKey(publicKey)
 	default:
-		return nil, nil, fmt.Errorf("Key type '%s' not recognized. Unable to generate new keypair", conf.KeyGenType)
+		return nil, nil, fmt.Errorf("key type '%s' not recognized. Unable to generate new keypair", conf.KeyGenType)
 	}
 
 	return authorizedKey, privateKeyPEM, nil
@@ -148,16 +148,16 @@ func saveNewKeyPair(conf *config) error {
 
 	publicKey, privateKey, err := genKeyPair(conf)
 	if err != nil {
-		return fmt.Errorf("Failed to generate new keys: %v", err)
+		return fmt.Errorf("failed to generate new keys: %v", err)
 	}
 
 	err = ioutil.WriteFile(conf.privKeyFile, privateKey, 0600)
 	if err != nil {
-		return fmt.Errorf("Failed to write private key file: %v", err)
+		return fmt.Errorf("failed to write private key file: %v", err)
 	}
 	err = ioutil.WriteFile(conf.pubKeyFile, publicKey, 0644)
 	if err != nil {
-		return fmt.Errorf("Failed to write public key file: %v", err)
+		return fmt.Errorf("failed to write public key file: %v", err)
 	}
 
 	return nil

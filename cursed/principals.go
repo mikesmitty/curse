@@ -10,7 +10,7 @@ import (
 func loadPrincipalMap(conf config) (map[string]string, error) {
 	file, err := os.Open(conf.PrincipalAliases)
 	if err != nil {
-		err = fmt.Errorf("Failed to open principalaliases file: '%v'", err)
+		err = fmt.Errorf("failed to open principalaliases file: '%v'", err)
 		return nil, err
 	}
 	defer file.Close()

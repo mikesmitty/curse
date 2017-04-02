@@ -48,16 +48,16 @@ func tlsGenKey(curve string) ([]byte, *ecdsa.PrivateKey, error) {
 	case "p521":
 		key, err = ecdsa.GenerateKey(elliptic.P521(), rand.Reader)
 	default:
-		return nil, nil, fmt.Errorf("Could not generate TLS key, invalid elliptic curve: %s", curve)
+		return nil, nil, fmt.Errorf("could not generate tls key, invalid elliptic curve: %s", curve)
 	}
 	if err != nil {
-		return nil, nil, fmt.Errorf("Error generating TLS key: %v", err)
+		return nil, nil, fmt.Errorf("error generating tls key: %v", err)
 	}
 
 	// Marshal key and write to disk
 	keyBytes, err := x509.MarshalECPrivateKey(key)
 	if err != nil {
-		return nil, nil, fmt.Errorf("Unable to convert TLS private key format to DER: %v", err)
+		return nil, nil, fmt.Errorf("unable to convert tls private key format to der: %v", err)
 	}
 	pemKey := &pem.Block{
 		Type:  "EC PRIVATE KEY",
@@ -109,12 +109,12 @@ func tlsSignCert(c certOpts) ([]byte, []byte, error) {
 
 		certBytes, err = x509.CreateCertificate(rand.Reader, tmpl, tmpl, &c.CAKey.PublicKey, c.CAKey)
 		if err != nil {
-			return nil, nil, fmt.Errorf("Failed to create certificate: %v", err)
+			return nil, nil, fmt.Errorf("failed to create certificate: %v", err)
 		}
 	} else {
 		certBytes, err = x509.CreateCertificate(rand.Reader, tmpl, c.CA, c.CSR.PublicKey, c.CAKey)
 		if err != nil {
-			return nil, nil, fmt.Errorf("Failed to create certificate: %v", err)
+			return nil, nil, fmt.Errorf("failed to create certificate: %v", err)
 		}
 	}
 

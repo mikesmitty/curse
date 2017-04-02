@@ -44,7 +44,7 @@ func checkPubKeyAge(conf *config, fp string) (bool, error) {
 			return true, nil
 		}
 	} else {
-		err = fmt.Errorf("Something went very wrong. Negative timestamp encountered: %d", keyBirthday)
+		err = fmt.Errorf("something went very wrong. negative timestamp encountered: %d", keyBirthday)
 		return true, err
 	}
 
@@ -55,27 +55,27 @@ func loadSSHCA(conf *config) (ssh.Signer, []byte, error) {
 	// Read in our private key PEM file
 	key, err := ioutil.ReadFile(conf.CAKeyFile)
 	if err != nil {
-		err = fmt.Errorf("Failed to read CA key file: '%v'", err)
+		err = fmt.Errorf("failed to read ca key file: '%v'", err)
 		return nil, nil, err
 	}
 
 	sk, err := ssh.ParsePrivateKey(key)
 	if err != nil {
-		err = fmt.Errorf("Failed to parse CA key: '%v'", err)
+		err = fmt.Errorf("failed to parse ca key: '%v'", err)
 		return nil, nil, err
 	}
 
 	// Get our CA fingerprint
 	rawPub, err := ioutil.ReadFile(fmt.Sprintf("%s.pub", conf.CAKeyFile))
 	if err != nil {
-		err = fmt.Errorf("Failed to read CA pubkey file: '%v'", err)
+		err = fmt.Errorf("failed to read ca pubkey file: '%v'", err)
 		return nil, nil, err
 	}
 
 	// Parse the pubkey
 	pubKey, _, _, _, err := ssh.ParseAuthorizedKey(rawPub)
 	if err != nil {
-		err = fmt.Errorf("Failed to parse CA pubkey: %v", err)
+		err = fmt.Errorf("failed to parse ca pubkey: %v", err)
 		return nil, nil, err
 	}
 
@@ -88,13 +88,18 @@ func loadSSHCA(conf *config) (ssh.Signer, []byte, error) {
 func signPubKey(conf *config, rawKey []byte, cc certConfig) ([]byte, error) {
 	pubKey, _, _, _, err := ssh.ParseAuthorizedKey(rawKey) // FIXME look into handling additional fields
 	if err != nil {
-		return nil, fmt.Errorf("Failed to parse pubkey: %v", err)
+		return nil, fmt.Errorf("failed to parse pubkey: %v", err)
 	}
 
 	// Get/update our ssh cert serial number
-	serial, err := dbIncSSHSerial(conf)
-	if err != nil {
-		return nil, err
+	var serial uint64
+	if conf.SSHSerial {
+		serial, err = dbIncSSHSerial(conf)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		serial = 0
 	}
 
 	critOpt := make(map[string]string)
@@ -122,7 +127,7 @@ func signPubKey(conf *config, rawKey []byte, cc certConfig) ([]byte, error) {
 
 	err = cert.SignCert(rand.Reader, conf.sshCASigner)
 	if err != nil {
-		err = fmt.Errorf("Failed to sign pubkey: %v", err)
+		err = fmt.Errorf("failed to sign pubkey: %v", err)
 		return nil, err
 	}
 	authorizedKey := ssh.MarshalAuthorizedKey(cert)

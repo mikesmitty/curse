@@ -64,7 +64,7 @@ func Jinx(verbose bool, args []string) {
 
 		// Make the cert request
 		if conf.verbose {
-			fmt.Fprintln(os.Stderr, "Making TLS cert request")
+			fmt.Fprintln(os.Stderr, "making tls cert request")
 		}
 		respBody, statusCode, err := requestTLSCert(conf)
 		if err != nil {
@@ -76,11 +76,11 @@ func Jinx(verbose bool, args []string) {
 		case http.StatusOK:
 			err = ioutil.WriteFile(conf.SSLCertFile, respBody, 0644)
 			if err != nil {
-				fmt.Fprintf(os.Stderr, "Failed to write TLS cert file: %v\n", err)
+				fmt.Fprintf(os.Stderr, "failed to write tls cert file: %v\n", err)
 				os.Exit(1)
 			}
 		default:
-			out := fmt.Sprintf("Server response: %s", respBody)
+			out := fmt.Sprintf("server response: %s", respBody)
 			fmt.Fprintf(os.Stderr, out)
 			os.Exit(statusCode)
 		}
@@ -88,7 +88,7 @@ func Jinx(verbose bool, args []string) {
 
 	// Send our pubkey to be signed
 	if conf.verbose {
-		fmt.Fprintln(os.Stderr, "Making SSH cert request")
+		fmt.Fprintln(os.Stderr, "making ssh cert request")
 	}
 	respBody, statusCode, err := requestSSHCert(conf, string(pubKey))
 	if err != nil {
@@ -100,19 +100,19 @@ func Jinx(verbose bool, args []string) {
 	case http.StatusOK:
 		err = ioutil.WriteFile(conf.certFile, respBody, 0644)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Failed to write cert file: %v\n", err)
+			fmt.Fprintf(os.Stderr, "failed to write cert file: %v\n", err)
 			os.Exit(1)
 		}
 	case http.StatusUnprocessableEntity:
 		if conf.AutoGenKeys {
-			fmt.Fprintln(os.Stderr, "Server denied pubkey due to age. Regenerating keypairs. Run command again after keys are regenerated.")
+			fmt.Fprintln(os.Stderr, "server denied pubkey due to age. regenerating keypairs. run command again after keys are regenerated.")
 			err = saveNewKeyPair(conf)
 			if err != nil {
-				fmt.Fprintf(os.Stderr, "Failed to generate key pair: %v\n", err)
+				fmt.Fprintf(os.Stderr, "failed to generate key pair: %v\n", err)
 				os.Exit(1)
 			}
 		} else {
-			fmt.Fprintln(os.Stderr, "Server denied pubkey due to age and automatic regeneration disabled. Please manually regenerate your SSH keys.")
+			fmt.Fprintln(os.Stderr, "server denied pubkey due to age and automatic regeneration disabled. please manually regenerate your ssh keys.")
 			os.Exit(1)
 		}
 	default:

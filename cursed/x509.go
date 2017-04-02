@@ -14,7 +14,7 @@ func genTLSCACert(conf *config) error {
 	// Generate CA private key
 	caKeyBytes, caKey, err := tlsGenKey(conf.SSLKeyCurve)
 	if err != nil {
-		return fmt.Errorf("Failed to generate CA private key: %v", err)
+		return fmt.Errorf("failed to generate ca private key: %v", err)
 	}
 
 	// Set our CA cert validity constraints
@@ -38,21 +38,21 @@ func genTLSCACert(conf *config) error {
 	// Sign the CA cert
 	caCert, _, err := tlsSignCert(opts)
 	if err != nil {
-		return fmt.Errorf("Failed to generate CA cert: %v", err)
+		return fmt.Errorf("failed to generate ca cert: %v", err)
 	}
 
 	err = ioutil.WriteFile(conf.SSLKey, caKeyBytes, 0600)
 	if err != nil {
-		return fmt.Errorf("Failed to write CA private key file: %v", err)
+		return fmt.Errorf("failed to write ca private key file: %v", err)
 	}
 
 	err = ioutil.WriteFile(conf.SSLCert, caCert, 0644)
 	if err != nil {
-		return fmt.Errorf("Failed to write cert file: %v", err)
+		return fmt.Errorf("failed to write cert file: %v", err)
 	}
 	err = ioutil.WriteFile(conf.SSLCA, caCert, 0644)
 	if err != nil {
-		return fmt.Errorf("Failed to write CA cert file: %v", err)
+		return fmt.Errorf("failed to write ca cert file: %v", err)
 	}
 
 	// Update our CA's serial index
@@ -67,7 +67,7 @@ func signTLSClientCert(conf *config, csr *x509.CertificateRequest) ([]byte, []by
 	// Get the next available serial number
 	serial, err := dbIncTLSSerial(conf)
 	if err != nil {
-		return nil, nil, fmt.Errorf("Failed to generate client certficate: %v", err)
+		return nil, nil, fmt.Errorf("failed to generate client certficate: %v", err)
 	}
 
 	// Set our CA cert options
@@ -84,7 +84,7 @@ func signTLSClientCert(conf *config, csr *x509.CertificateRequest) ([]byte, []by
 	// Sign the CA cert
 	pemCert, rawCert, err := tlsSignCert(opts)
 	if err != nil {
-		return nil, nil, fmt.Errorf("Failed to generate client cert: %v", err)
+		return nil, nil, fmt.Errorf("failed to generate client cert: %v", err)
 	}
 
 	return pemCert, rawCert, nil
@@ -103,12 +103,12 @@ func initTLSCerts(conf *config) (bool, error) {
 		}
 	}
 	if os.IsNotExist(errK) && !os.IsNotExist(errC) {
-		return false, fmt.Errorf("Error initializing CA certificate: sslcert exists, but sslkey does not")
+		return false, fmt.Errorf("error initializing ca certificate: sslcert exists, but sslkey does not")
 	}
 
 	if _, err = os.Stat(conf.SSLCA); os.IsNotExist(err) {
 		conf.SSLCA = conf.SSLCert
-		return true, fmt.Errorf("Discrete CA cert not supported with automatic cert generation. Using sslcert file as CA cert: %s", conf.SSLCert)
+		return true, fmt.Errorf("discrete ca cert not supported with automatic cert generation. Using sslcert file as ca cert: %s", conf.SSLCert)
 	}
 
 	// Load our CA cert/key for signing
@@ -124,29 +124,29 @@ func loadTLSCA(conf *config) error {
 	// Load CA key for signing
 	caKeyPem, err := ioutil.ReadFile(conf.SSLKey)
 	if err != nil {
-		return fmt.Errorf("Failed to read TLS key file: '%v'", err)
+		return fmt.Errorf("failed to read tls key file: '%v'", err)
 	}
 	caKey, _ := pem.Decode(caKeyPem)
 	if caKey == nil {
-		return fmt.Errorf("Failed to parse TLS key file: '%v'", err)
+		return fmt.Errorf("failed to parse tls key file: '%v'", err)
 	}
 	conf.tlsCAKey, err = x509.ParseECPrivateKey(caKey.Bytes)
 	if err != nil {
-		return fmt.Errorf("Failed to parse TLS cert file: '%v'", err)
+		return fmt.Errorf("failed to parse tls cert file: '%v'", err)
 	}
 
 	// Load CA cert for signing
 	caCertPem, err := ioutil.ReadFile(conf.SSLCert)
 	if err != nil {
-		return fmt.Errorf("Failed to read TLS cert file: '%v'", err)
+		return fmt.Errorf("failed to read tls cert file: '%v'", err)
 	}
 	caCert, _ := pem.Decode(caCertPem)
 	if caCert == nil {
-		return fmt.Errorf("Failed to decode TLS cert file: '%v'", err)
+		return fmt.Errorf("failed to decode tls cert file: '%v'", err)
 	}
 	conf.tlsCACert, err = x509.ParseCertificate(caCert.Bytes)
 	if err != nil {
-		return fmt.Errorf("Failed to parse TLS cert file: '%v'", err)
+		return fmt.Errorf("failed to parse tls cert file: '%v'", err)
 	}
 
 	return nil

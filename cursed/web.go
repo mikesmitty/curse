@@ -1,38 +1,94 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"net/http"
+	"strings"
 	"time"
 
 	"golang.org/x/crypto/ssh"
 )
 
 type httpParams struct {
-	bastionIP  string
-	cmd        string
-	key        string
-	remoteUser string
-	userIP     string
-	user       string
+	BastionIP   string `json:"bastion_ip,omitempty"`
+	BastionUser string `json:"bastion_user,omitempty"`
+	Cmd         string `json:"cmd,omitempty"`
+	CSR         string `json:"csr,omitempty"`
+	Key         string `json:"key,omitempty"`
+	RemoteUser  string `json:"remote_user,omitempty"`
+	UserIP      string `json:"user_ip,omitempty"`
+
+	user string
+}
+
+func getJSONParams(r *http.Request) (httpParams, error) {
+	var p httpParams
+
+	body, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		return p, err
+	}
+	r.Body.Close()
+
+	err = json.Unmarshal(body, &p)
+	if err != nil {
+		return p, err
+	}
+
+	return p, nil
 }
 
 func sshCertHandler(w http.ResponseWriter, r *http.Request, conf *config) {
-	// Verify the client certificate
-	if len(r.TLS.VerifiedChains) == 0 {
-		log.Printf("no valid client certificate provided")
-		http.Error(w, "Not authorized", http.StatusUnauthorized)
+	// Set up some useful info for logging
+	parts := strings.Split(r.RemoteAddr, ":")
+	if len(parts) == 0 {
+		log.Print("critical error, could not get client IP from request")
+		http.Error(w, "not authorized", http.StatusUnauthorized)
+		return
+	}
+	ip := parts[0]
+	un := "-"
+
+	// Start up our logger
+	logger := newLog(conf, ip, "ssh", "")
+
+	// Load our form parameters into a struct
+	p, err := getJSONParams(r)
+	if err != nil {
+		msg := fmt.Sprintf("bad json in request: %v", err)
+		code := http.StatusBadRequest
+		logger.req(un, code, msg)
+		http.Error(w, "bad request", code)
 		return
 	}
 
-	// Load our form parameters into a struct
-	p := httpParams{
-		bastionIP:  r.PostFormValue("bastionIP"),
-		cmd:        r.PostFormValue("cmd"),
-		key:        r.PostFormValue("key"),
-		remoteUser: r.PostFormValue("remoteUser"),
-		userIP:     r.PostFormValue("userIP"),
+	// Update our logger
+	logger.rip = p.UserIP
+
+	// Verify the client certificate
+	if len(r.TLS.VerifiedChains) == 0 {
+		msg := "no valid client certificate provided"
+		code := http.StatusUnauthorized
+		logger.req(un, code, msg)
+		http.Error(w, "not authorized", code)
+		return
+	}
+
+	// Get the client certificate CN
+	p.user = r.TLS.PeerCertificates[0].Subject.CommonName
+	un = p.user
+
+	// Make sure we have everything we need from our parameters
+	err = validateHTTPParams(conf, p)
+	if err != nil {
+		msg := fmt.Sprintf("validation failure: %v", err)
+		code := http.StatusBadRequest
+		logger.req(un, code, msg)
+		http.Error(w, msg, code)
+		return
 	}
 
 	// Set our certificate validity times
@@ -40,97 +96,91 @@ func sshCertHandler(w http.ResponseWriter, r *http.Request, conf *config) {
 	vb := time.Now().Add(conf.dur)
 
 	// Generate a fingerprint of the received public key for our key_id string
-	pk, _, _, _, err := ssh.ParseAuthorizedKey([]byte(p.key))
+	pk, _, _, _, err := ssh.ParseAuthorizedKey([]byte(p.Key))
 	if err != nil {
-		log.Printf("unable to parse authorized key |%s|", p.key)
-		http.Error(w, "Unable to parse authorized key", http.StatusBadRequest)
+		msg := "unable to parse authorized key"
+		code := http.StatusBadRequest
+		logger.req(un, code, msg)
+		http.Error(w, msg, code)
 		return
 	}
 	// Using md5 because that's what ssh-keygen prints out, making searches for a particular key easier
 	fp := ssh.FingerprintLegacyMD5(pk)
 
-	// Get the client certificate CN
-	p.user = r.TLS.PeerCertificates[0].Subject.CommonName
-
 	// Generate our key_id for the certificate
 	keyID := fmt.Sprintf("user[%s] from[%s] command[%s] sshKey[%s] ca[%s] valid to[%s]",
-		p.user, p.userIP, p.cmd, fp, conf.sshCAFP, vb.Format(time.RFC3339))
-
-	// Log the request
-	log.Printf("SSH request: %s", keyID)
+		p.user, p.UserIP, p.Cmd, fp, conf.sshCAFP, vb.Format(time.RFC3339))
 
 	// Check if user is authorized for this principal
-	err = unixgroup(conf, p.user, p.remoteUser)
+	err = unixgroup(conf, p.user, p.RemoteUser)
 	if err != nil {
-		log.Printf("authorization failure: %v", err)
-		http.Error(w, "Not authorized", http.StatusUnauthorized)
-		return
-	}
-
-	// Make sure we have everything we need from our parameters
-	err = validateHTTPParams(conf, p)
-	if err != nil {
-		errMsg := fmt.Sprintf("validation failure: %v", err)
-		log.Print(errMsg)
-		http.Error(w, errMsg, http.StatusBadRequest)
+		msg := fmt.Sprintf("authorization failure: %v", err)
+		code := http.StatusUnauthorized
+		logger.req(un, code, msg)
+		http.Error(w, "not authorized", code)
 		return
 	}
 
 	// Check if we've seen this pubkey before and if it's too old
 	expired, err := checkPubKeyAge(conf, fp)
 	if expired {
-		if err != nil {
-			log.Printf("pubkey expiration check error - user[%s] pubkey[%s]: %v", p.user, fp, err)
-		} else {
-			log.Printf("pubkey expired: user[%s] pubkey[%s]", p.user, fp)
-		}
-		http.Error(w, "Submitted pubkey is too old. Please generate new key.", http.StatusUnprocessableEntity)
+		code := http.StatusUnprocessableEntity
+		msg := fmt.Sprintf("pubkey expired: user[%s] pubkey[%s]: %v", p.user, fp, err)
+		logger.req(un, code, msg)
+		http.Error(w, "submitted pubkey is too old. Please generate new key.", code)
 		return
 	}
 
 	// Set all of our certificate options
 	cc := certConfig{
 		certType:    ssh.UserCert,
-		command:     p.cmd,
+		command:     p.Cmd,
 		extensions:  conf.exts,
 		keyID:       keyID,
-		principals:  []string{p.remoteUser},
-		srcAddr:     p.bastionIP,
+		principals:  []string{p.RemoteUser},
+		srcAddr:     p.BastionIP,
 		validAfter:  va,
 		validBefore: vb,
 	}
 
 	// Sign the public key
-	authorizedKey, err := signPubKey(conf, []byte(p.key), cc)
+	authorizedKey, err := signPubKey(conf, []byte(p.Key), cc)
 	if err != nil {
-		log.Printf("%v", err)
-		http.Error(w, "Server error", http.StatusInternalServerError)
+		code := http.StatusInternalServerError
+		msg := err.Error()
+		logger.req(un, code, msg)
+		http.Error(w, "server error", code)
 		return
 	}
 
+	// Log the request
+	code := http.StatusOK
+	logger.req(un, code, keyID)
+
+	// Return the cert
 	w.Write(authorizedKey)
 }
 
 func validateHTTPParams(conf *config, p httpParams) error {
-	if conf.ForceCmd && p.cmd == "" {
+	if conf.ForceCmd && p.Cmd == "" {
 		err := fmt.Errorf("cmd missing from request")
 		return err
 	}
-	if p.bastionIP == "" || !validIP(p.bastionIP) {
+	if p.BastionIP == "" || !validIP(p.BastionIP) {
 		err := fmt.Errorf("bastionIP is invalid")
 		return err
 	}
-	if p.key == "" {
+	if p.Key == "" {
 		err := fmt.Errorf("key missing from request")
 		return err
 	}
-	if p.remoteUser == "" {
+	if p.RemoteUser == "" {
 		err := fmt.Errorf("remoteUser missing from request")
 		return err
 	}
-	if conf.RequireClientIP && !validIP(p.userIP) {
+	if conf.RequireClientIP && !validIP(p.UserIP) {
 		err := fmt.Errorf("invalid userIP")
-		log.Printf("invalid userIP: |%s|", p.userIP) // FIXME This should be re-evaluated in the logging refactor
+		log.Printf("invalid userIP: |%s|", p.UserIP) // FIXME This should be re-evaluated in the logging refactor
 		return err
 	}
 	if p.user == "" {

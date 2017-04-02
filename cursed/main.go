@@ -40,11 +40,13 @@ type config struct {
 	Extensions       []string
 	ForceCmd         bool
 	KeyAgeCritical   bool
+	LogTimestamp     bool
 	MaxKeyAge        int
 	Port             int
 	PrincipalAliases string
 	Pwauth           string
 	RequireClientIP  bool
+	SSHSerial        bool
 	SSLCA            string
 	SSLCADuration    int
 	SSLCert          string
@@ -91,14 +93,14 @@ func main() {
 	// Open our key tracking database file
 	conf.db, err = bolt.Open(conf.DBFile, 0600, nil)
 	if err != nil {
-		log.Fatalf("Could not open database file %v", err)
+		log.Fatalf("could not open database file %v", err)
 	}
 	defer conf.db.Close()
 
 	// Initialize/check the PubKey lifecycle database
 	err = dbInitPubKeyBucket(conf)
 	if err != nil {
-		log.Fatalf("Could not open database file %v", err)
+		log.Fatalf("could not open database file %v", err)
 	}
 
 	// Check TLS certs
@@ -130,16 +132,23 @@ func main() {
 		log.Fatal(err)
 	}
 	server := &http.Server{
-		Addr:      addrPort,
-		Handler:   s,
-		TLSConfig: tlsConf,
+		Addr:         addrPort,
+		Handler:      s,
+		IdleTimeout:  60 * time.Second,
+		ReadTimeout:  5 * time.Second,
+		TLSConfig:    tlsConf,
+		WriteTimeout: 10 * time.Second,
 	}
 
 	// Start our listener service
-	log.Printf("Starting HTTPS cert server on %s", addrPort)
+	if conf.LogTimestamp {
+		log.Printf("Starting HTTPS cert server on %s", addrPort)
+	} else {
+		fmt.Printf("Starting HTTPS cert server on %s\n", addrPort)
+	}
 	err = server.ListenAndServeTLS(conf.SSLCert, conf.SSLKey)
 	if err != nil {
-		log.Fatalf("Listener service: %v", err)
+		log.Fatalf("listener service: %v", err)
 	}
 }
 
@@ -156,7 +165,7 @@ func init() {
 
 	// If a config file is found, read it in.
 	if err := viper.ReadInConfig(); err == nil {
-		log.Printf("Using config file: %s", viper.ConfigFileUsed())
+		fmt.Printf("Using config file: %s\n", viper.ConfigFileUsed())
 	}
 
 	viper.SetDefault("addr", "127.0.0.1")
@@ -167,11 +176,13 @@ func init() {
 	viper.SetDefault("extensions", []string{"permit-pty"})
 	viper.SetDefault("forcecmd", false)
 	viper.SetDefault("keyagecritical", false)
+	viper.SetDefault("logtimestamp", false)
 	viper.SetDefault("maxkeyage", 90) // 90 day default
 	viper.SetDefault("port", 443)
 	viper.SetDefault("principalaliases", "/opt/curse/etc/aliases.conf")
 	viper.SetDefault("pwauth", "/usr/bin/pwauth")
 	viper.SetDefault("requireclientip", true)
+	viper.SetDefault("sshserial", false)
 	viper.SetDefault("sslca", "/opt/curse/etc/cursed.crt")
 	viper.SetDefault("sslcaduration", 730) // 2 year default
 	viper.SetDefault("sslcert", "/opt/curse/etc/cursed.crt")
@@ -201,7 +212,7 @@ func validateExtensions(confExts []string) (map[string]string, []error) {
 			}
 		}
 		if !valid {
-			err := fmt.Errorf("Invalid extension in config: %s", confExts[i])
+			err := fmt.Errorf("invalid extension in config: %s", confExts[i])
 			errSlice = append(errSlice, err)
 		}
 	}
@@ -214,7 +225,7 @@ func getConf() (*config, error) {
 	var conf config
 	err := viper.Unmarshal(&conf)
 	if err != nil {
-		return nil, fmt.Errorf("Unable to read config into struct: %v", err)
+		return nil, fmt.Errorf("unable to read config into struct: %v", err)
 	}
 	// Hardcoding the DB bucket name
 	conf.bucketNameFP = []byte("pubkeybirthdays")
@@ -246,7 +257,7 @@ func getConf() (*config, error) {
 
 	// Compile our user-matching regex (usernames are limited to 32 characters, must start
 	// with a-z or _, and contain only these characters: a-z, 0-9, - and _
-	conf.userRegex = regexp.MustCompile(`(?i)^[a-z_][a-z0-9_-]{0,31}$`)
+	conf.userRegex = regexp.MustCompile(`(?i)^[a-z_][a-z0-9_-]{1,31}$`)
 
 	return &conf, nil
 }

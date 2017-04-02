@@ -36,7 +36,7 @@ func getBastionIP() (string, error) {
 	addrs, err := net.InterfaceAddrs()
 	if err != nil {
 		// FIXME add some logging level verbosity here
-		return "", fmt.Errorf("Unable to find bastion IP: %v", err)
+		return "", fmt.Errorf("unable to find bastion ip: %v", err)
 	}
 
 	for _, ip := range addrs {
@@ -46,27 +46,27 @@ func getBastionIP() (string, error) {
 		}
 	}
 
-	return "", fmt.Errorf("Found no public IP addresses")
+	return "", fmt.Errorf("found no public ip addresses")
 }
 
 func getUserPass(conf *config) (string, string, error) {
 	// Nag-mode for inadvertent/malicious insecure setting
 	if conf.Insecure {
-		fmt.Println("Warning, your password is about to be sent insecurely. ctrl+c to quit")
+		fmt.Println("warning, your password is about to be sent insecurely. ctrl+c to quit")
 	}
 
 	// Read in our username and password
 	reader := bufio.NewReader(os.Stdin)
-	fmt.Printf("Username: ")
+	fmt.Printf("username: ")
 	user, err := reader.ReadString('\n')
 	if err != nil {
 		return "", "", fmt.Errorf("Input error: %v", err)
 	}
 	user = strings.TrimSpace(user)
 
-	pass, err := speakeasy.Ask("Password: ")
+	pass, err := speakeasy.Ask("password: ")
 	if err != nil {
-		return "", "", fmt.Errorf("Shell error: %v", err)
+		return "", "", fmt.Errorf("shell error: %v", err)
 	}
 
 	return user, pass, nil

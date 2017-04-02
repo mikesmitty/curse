@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/binary"
 	"fmt"
 	"math/big"
 	"strconv"
@@ -94,7 +95,7 @@ func dbIncSSHSerial(conf *config) (uint64, error) {
 		if len(val) == 0 {
 			serial = 0
 		} else {
-			serial, err = strconv.ParseUint(string(val), 10, 64)
+			serial = binary.LittleEndian.Uint64(val)
 			if err != nil {
 				return fmt.Errorf("ssh serial counter in db corrupted: %v", err)
 			}
@@ -102,8 +103,9 @@ func dbIncSSHSerial(conf *config) (uint64, error) {
 
 		// Increment and update the serial
 		newSerial = serial + 1
-		sb := strconv.FormatUint(newSerial, 10)
-		err = bucket.Put(key, []byte(sb))
+		sb := make([]byte, 8)
+		binary.LittleEndian.PutUint64(sb, newSerial)
+		err = bucket.Put(key, sb)
 		if err != nil {
 			return err
 		}
@@ -127,8 +129,9 @@ func dbSetSSHSerial(conf *config, serial uint64) error {
 		}
 
 		// Save the serial number counter to the db
-		serial := strconv.FormatUint(serial, 10)
-		err = bucket.Put(key, []byte(serial))
+		sb := make([]byte, 8)
+		binary.LittleEndian.PutUint64(sb, serial)
+		err = bucket.Put(key, sb)
 		if err != nil {
 			return err
 		}
