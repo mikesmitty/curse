@@ -73,6 +73,10 @@ First, install pwauth, curse, and jinx:
     $ sudo curl -s https://mirror.go-repo.io/curse/centos/curse-repo.repo | tee /etc/yum.repos.d/curse-repo.repo
     $ sudo yum install curse jinx pwauth
 
+Unless you're using httpd on this server for any other reason you should mask the httpd service:
+
+    $ sudo systemctl mask httpd
+
 Run the curse post-install setup script
 
     $ sudo bash /opt/curse/sbin/setup.sh
