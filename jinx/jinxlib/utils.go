@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"os/user"
 	"regexp"
 	"strings"
 
@@ -51,8 +52,8 @@ func getBastionIP() (string, error) {
 
 func getUserPass(conf *config) (string, string, error) {
 	var (
-		user string
-		err  error
+		un  string
+		err error
 	)
 
 	// Nag-mode for inadvertent/malicious insecure setting
@@ -63,19 +64,19 @@ func getUserPass(conf *config) (string, string, error) {
 	if !conf.PromptUsername {
 		u, err := user.Current()
 		if err == nil {
-			user = u.Username
+			un = u.Username
 		}
 	}
 
 	// Read in our username and password
-	if user == "" {
+	if un == "" {
 		reader := bufio.NewReader(os.Stdin)
 		fmt.Printf("username: ")
-		user, err = reader.ReadString('\n')
+		un, err = reader.ReadString('\n')
 		if err != nil {
 			return "", "", fmt.Errorf("Input error: %v", err)
 		}
-		user = strings.TrimSpace(user)
+		un = strings.TrimSpace(un)
 	}
 
 	pass, err := speakeasy.Ask("password: ")
@@ -83,5 +84,5 @@ func getUserPass(conf *config) (string, string, error) {
 		return "", "", fmt.Errorf("shell error: %v", err)
 	}
 
-	return user, pass, nil
+	return un, pass, nil
 }

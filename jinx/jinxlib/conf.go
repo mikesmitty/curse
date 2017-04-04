@@ -25,7 +25,7 @@ type config struct {
 	KeyGenBitSize  int
 	KeyGenPubKey   string
 	KeyGenType     string
-	PromptUsername string
+	PromptUsername bool
 	PubKey         string
 	SSHUser        string
 	SSLCAFile      string
