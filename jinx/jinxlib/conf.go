@@ -19,22 +19,23 @@ type config struct {
 	userPass    string
 	verbose     bool
 
-	AutoGenKeys   bool
-	BastionIP     string
-	Insecure      bool
-	KeyGenBitSize int
-	KeyGenPubKey  string
-	KeyGenType    string
-	PubKey        string
-	SSHUser       string
-	SSLCAFile     string
-	SSLCertFile   string
-	SSLKeyCurve   string
-	SSLKeyFile    string
-	Timeout       int
-	URLAuth       string
-	URLCurse      string
-	UseSSLCA      bool
+	AutoGenKeys    bool
+	BastionIP      string
+	Insecure       bool
+	KeyGenBitSize  int
+	KeyGenPubKey   string
+	KeyGenType     string
+	PromptUsername string
+	PubKey         string
+	SSHUser        string
+	SSLCAFile      string
+	SSLCertFile    string
+	SSLKeyCurve    string
+	SSLKeyFile     string
+	Timeout        int
+	URLAuth        string
+	URLCurse       string
+	UseSSLCA       bool
 }
 
 func getConf() (*config, error) {

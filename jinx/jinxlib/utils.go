@@ -50,19 +50,33 @@ func getBastionIP() (string, error) {
 }
 
 func getUserPass(conf *config) (string, string, error) {
+	var (
+		user string
+		err  error
+	)
+
 	// Nag-mode for inadvertent/malicious insecure setting
 	if conf.Insecure {
 		fmt.Println("warning, your password is about to be sent insecurely. ctrl+c to quit")
 	}
 
-	// Read in our username and password
-	reader := bufio.NewReader(os.Stdin)
-	fmt.Printf("username: ")
-	user, err := reader.ReadString('\n')
-	if err != nil {
-		return "", "", fmt.Errorf("Input error: %v", err)
+	if !conf.PromptUsername {
+		u, err := user.Current()
+		if err == nil {
+			user = u.Username
+		}
 	}
-	user = strings.TrimSpace(user)
+
+	// Read in our username and password
+	if user == "" {
+		reader := bufio.NewReader(os.Stdin)
+		fmt.Printf("username: ")
+		user, err = reader.ReadString('\n')
+		if err != nil {
+			return "", "", fmt.Errorf("Input error: %v", err)
+		}
+		user = strings.TrimSpace(user)
+	}
 
 	pass, err := speakeasy.Ask("password: ")
 	if err != nil {

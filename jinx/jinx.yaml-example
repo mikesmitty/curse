@@ -20,6 +20,9 @@
 ## with matching public key file
 #keygenpubkey: $HOME/.ssh/id_jinx.pub
 
+## Prompt for username (as opposed to using logged-in account's username)
+#promptusername: false
+
 ## Location of the SSH pubkey to be signed (if autogenkeys is disabled)
 #pubkey: $HOME/.ssh/id_ed25519.pub
 
